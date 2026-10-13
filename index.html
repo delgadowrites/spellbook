@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spellbook Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column. Spell glossary on top, then a row of spell tabs, then the active spell card (request, components, code, cast results). Single dark look in Carlos's CGA palette. */
+:root{
+  --bg:#1a0e30; --panel:#28154c; --panel-2:#33205e; --line:#4a3680;
+  --ink:#ece7ff; --muted:#b9b0e0;
+  --gold:#ffbf83; --cyan:#00ffff; --magenta:#bf00ff;
+  --ok:#7dffb0; --bad:#ff9a9a;
+  --display:"Press Start 2P", ui-monospace, monospace;
+  --body:"Atkinson Hyperlegible", system-ui, sans-serif;
+  --code:"JetBrains Mono", ui-monospace, Menlo, monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6;margin:0}
+.wrap{max-width:780px;margin:0 auto;padding-inline:16px;padding-block:28px 64px;display:flex;flex-direction:column;gap:28px}
+h1{font-family:var(--display);font-size:20px;line-height:1.5;color:var(--gold);margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-size:13px;line-height:1.6;color:var(--cyan);margin:0;letter-spacing:.02em}
+h3{font-family:var(--display);font-size:12px;color:var(--gold);margin:0}
+p{margin:0}
+.lede{color:var(--muted);max-width:62ch}
+code,.code{font-family:var(--code);font-size:14px}
+.inline{background:var(--panel-2);border-radius:4px;padding:1px 6px;color:var(--cyan)}
+section{display:flex;flex-direction:column;gap:14px}
+.panel{background:var(--panel);border:2px solid var(--line);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.codebox{background:#120926;border:1px solid var(--line);border-radius:6px;padding:14px 16px;overflow-x:auto;white-space:pre;font-family:var(--code);font-size:14px;line-height:1.8;color:var(--ink);min-width:0}
+.k{color:var(--magenta)} .n{color:var(--gold)} .s{color:var(--ok)} .c{color:var(--muted)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--display);font-size:10px;color:var(--muted);font-weight:400;letter-spacing:.04em}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
+.tag.built{color:var(--magenta);border-color:var(--magenta)}
+.tag.yours{color:var(--gold);border-color:var(--gold)}
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tab{font-family:var(--display);font-size:10px;line-height:1.4;padding:10px 12px;border-radius:4px;border:2px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+.tab:hover{border-color:var(--cyan)}
+.tab[aria-selected="true"]{border-color:var(--gold);color:var(--gold);background:var(--panel-2)}
+.tab .done{color:var(--ok)}
+.tab:focus-visible,button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;color:var(--muted);font-size:14px}
+.request{border-left:4px solid var(--gold);padding-left:14px;border-radius:0}
+.request p{max-width:62ch}
+.components{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.comp{background:var(--panel-2);border-radius:6px;padding:10px 12px;min-width:0}
+.comp code{color:var(--gold)}
+.comp p{color:var(--muted);font-size:14px}
+.slotcode input{font-family:var(--code);font-size:14px;background:#2b1a52;color:var(--gold);border:1px dashed var(--gold);border-radius:4px;padding:2px 6px;min-width:4ch}
+textarea{width:100%;min-height:220px;resize:vertical;background:#120926;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:14px 16px;font-family:var(--code);font-size:14px;line-height:1.7;tab-size:2}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+button.btn{font-family:var(--display);font-size:11px;padding:12px 16px;border-radius:4px;border:2px solid var(--gold);background:var(--gold);color:#28154c;cursor:pointer}
+button.btn:hover{background:transparent;color:var(--gold)}
+button.btn:active{transform:translate(2px,2px)}
+button.ghost{background:transparent;color:var(--cyan);border-color:var(--cyan)}
+button.ghost:hover{background:var(--cyan);color:#28154c}
+.hints{display:flex;flex-direction:column;gap:8px}
+.hint{background:var(--panel-2);border-radius:6px;padding:10px 12px;font-size:15px}
+.hint strong{color:var(--cyan)}
+.results{display:flex;flex-direction:column;gap:8px}
+.res{border:1px solid var(--line);border-radius:6px;padding:10px 12px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px;min-width:0}
+.res .lbl{color:var(--muted);font-size:13px}
+.res code{word-break:break-word;white-space:pre-wrap}
+.res.pass{border-color:var(--ok)} .res.fail{border-color:var(--bad)}
+.verdict{font-family:var(--display);font-size:11px}
+.verdict.pass{color:var(--ok)} .verdict.fail{color:var(--bad)}
+.banner{border:2px solid var(--ok);border-radius:6px;padding:12px 14px;color:var(--ok);font-weight:700}
+.banner.warn{border-color:var(--gold);color:var(--gold);font-weight:400}
+.note{color:var(--muted);font-size:14px}
+@media (max-width:480px){h1{font-size:16px}.res{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){button.btn:active{transform:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:12px">
+    <h1>Spellbook Trainer</h1>
+    <p class="lede">Practice writing JavaScript functions as spells. Each spell request tells you its name, its components and what it should release. Write it, then cast it to run the tests.</p>
+  </header>
+
+  <section aria-labelledby="anatomy-h">
+    <h2 id="anatomy-h">Anatomy of a spell</h2>
+    <div class="codebox" aria-label="Example spell code"><span class="k">function</span> <span class="n">frostNova</span>(<span class="n">target</span>, <span class="n">power</span>) {
+  <span class="k">const</span> cold = power * 5;
+  <span class="k">return</span> <span class="s">"Frost nova chills "</span> + target + <span class="s">" for "</span> + cold + <span class="s">" cold"</span>;
+}
+
+<span class="c">// casting it:</span>
+frostNova(<span class="s">"the bat"</span>, 4);   <span class="c">// "Frost nova chills the bat for 20 cold"</span></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Spell part</th><th>Code</th><th>Who decides</th></tr></thead>
+        <tbody>
+          <tr><td>Begin the incantation</td><td><code class="inline">function</code></td><td><span class="tag built">built in</span></td></tr>
+          <tr><td>Spell name (a verb or action)</td><td><code class="inline">frostNova</code></td><td><span class="tag yours">your choice</span> must match the request</td></tr>
+          <tr><td>Components, the slots the caster fills</td><td><code class="inline">(target, power)</code></td><td><span class="tag yours">your choice</span> names, separated by commas</td></tr>
+          <tr><td>The ritual circle: everything the spell does</td><td><code class="inline">{ … }</code></td><td><span class="tag built">built in</span></td></tr>
+          <tr><td>A working step inside the spell</td><td><code class="inline">const cold = power * 5;</code></td><td><span class="tag yours">your choice</span></td></tr>
+          <tr><td>The effect the spell releases</td><td><code class="inline">return …;</code></td><td><span class="tag built">return</span> is built in; what follows is yours</td></tr>
+          <tr><td>Casting: filling the components with real values</td><td><code class="inline">frostNova("the bat", 4)</code></td><td>Values land in the slots <strong>by order</strong>: <code class="inline">"the bat"</code> → target, <code class="inline">4</code> → power</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Text joins with <code class="inline">+</code>. Spaces inside the quotes matter: <code class="inline">"Frost nova chills " + target</code> keeps a space before the target's name.</p>
+  </section>
+
+  <section aria-labelledby="spells-h">
+    <h2 id="spells-h">Spell requests</h2>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div id="eval-warning" class="banner warn" hidden>This view blocks running code, so Cast can't test your spell here. Copy your spell into the Firefox Console, paste it, then type each test call shown below and compare.</div>
+    <article class="panel" id="spell" aria-live="polite"></article>
+  </section>
+</div>
+
+<!-- The spells live in spells.js. Add new spells there. -->
+<script src="spells.js"></script>
+<script>
+
+let evalAllowed = true;
+try { evalAllowed = (new Function("return 7"))() === 7; } catch (e) { evalAllowed = false; }
+if (!evalAllowed) document.getElementById("eval-warning").hidden = false;
+
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+};
+let done = store.get("spellbook-done", {});
+let drafts = store.get("spellbook-drafts", {});
+let current = SPELLS[0].id;
+let hintsShown = {};
+
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function show(v){
+  if (typeof v === "string") return JSON.stringify(v);
+  if (v === undefined) return "undefined";
+  try { return JSON.stringify(v); } catch(e){ return String(v); }
+}
+
+function renderTabs(){
+  const tabs = document.getElementById("tabs");
+  tabs.innerHTML = "";
+  SPELLS.forEach(sp => {
+    const b = document.createElement("button");
+    b.className = "tab"; b.type = "button"; b.setAttribute("role","tab"); b.id = "tab-" + sp.id;
+    b.setAttribute("aria-selected", sp.id === current ? "true" : "false");
+    b.innerHTML = esc(sp.title) + (done[sp.id] ? ' <span class="done" aria-label="completed">✓</span>' : "");
+    b.addEventListener("click", () => { saveDraft(); current = sp.id; renderTabs(); renderSpell(); });
+    tabs.appendChild(b);
+  });
+}
+
+function slotInputs(){ return Array.from(document.querySelectorAll("#spell [data-slot]")); }
+
+function currentCode(sp){
+  if (sp.mode === "slots") {
+    const vals = {}; slotInputs().forEach(i => vals[i.dataset.slot] = i.value);
+    return sp.template.map(p => p.t !== undefined ? p.t : (vals[p.slot] || "")).join("");
+  }
+  const ta = document.getElementById("editor-" + sp.id);
+  return ta ? ta.value : "";
+}
+
+function saveDraft(){
+  const sp = SPELLS.find(s => s.id === current);
+  if (!sp) return;
+  if (sp.mode === "slots") { const vals = {}; slotInputs().forEach(i => vals[i.dataset.slot] = i.value); drafts[sp.id] = vals; }
+  else { const ta = document.getElementById("editor-" + sp.id); if (ta) drafts[sp.id] = ta.value; }
+  store.set("spellbook-drafts", drafts);
+}
+
+function renderSpell(){
+  const sp = SPELLS.find(s => s.id === current);
+  const el = document.getElementById("spell");
+  hintsShown[sp.id] = hintsShown[sp.id] || 0;
+  const comps = sp.components.map(c => `<div class="comp"><code>${esc(c.name)}</code><p>${esc(c.desc)}</p></div>`).join("");
+  let codeArea = "";
+  if (sp.mode === "slots") {
+    const saved = drafts[sp.id] || {};
+    let html = "";
+    sp.template.forEach(p => {
+      if (p.t !== undefined) html += esc(p.t);
+      else html += `<input data-slot="${p.slot}" id="slot-${sp.id}-${p.slot}" aria-label="${esc(p.ph)}" placeholder="${esc(p.ph)}" size="${p.w}" value="${esc(saved[p.slot] || "")}" spellcheck="false" autocomplete="off">`;
+    });
+    codeArea = `<h3>Fill the blanks</h3><div class="codebox slotcode">${html}</div>`;
+  } else {
+    const saved = drafts[sp.id] !== undefined ? drafts[sp.id] : sp.starter;
+    codeArea = `<h3>Write the spell</h3><p class="note">Your plan is already in the editor as comments. Write the code under it.</p><label class="note" for="editor-${sp.id}">Spell code</label><textarea id="editor-${sp.id}" spellcheck="false" autocomplete="off">${esc(saved)}</textarea>`;
+  }
+  const setup = sp.setup ? `<h3>From your spellbook</h3><p class="note">${esc(sp.setupNote)}</p><div class="codebox">${esc(sp.setup)}</div>` : "";
+  const testsList = sp.tests.map(t => `<li><code class="inline">${esc(t.call)}</code> → <code class="inline">${esc(show(t.expected))}</code></li>`).join("");
+  el.innerHTML = `
+    <div class="meta"><span class="tag yours">${esc(sp.level)}</span><span>Spell ${SPELLS.indexOf(sp)+1} of ${SPELLS.length}</span></div>
+    <h2>${esc(sp.title)}</h2>
+    <div class="request"><p>${sp.request}</p></div>
+    <h3>Components</h3>
+    <div class="components">${comps}</div>
+    ${setup}
+    ${codeArea}
+    <div class="actions">
+      <button class="btn" type="button" id="cast">Cast spell</button>
+      <button class="btn ghost" type="button" id="hint">Hint (${hintsShown[sp.id]}/${sp.hints.length})</button>
+      <button class="btn ghost" type="button" id="reset">Reset</button>
+    </div>
+    <div class="hints" id="hints"></div>
+    <h3>Trials</h3>
+    <ul class="note" style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px">${testsList}</ul>
+    <div class="results" id="results"></div>`;
+  renderHints(sp);
+  document.getElementById("cast").addEventListener("click", () => cast(sp));
+  document.getElementById("hint").addEventListener("click", () => {
+    if (hintsShown[sp.id] < sp.hints.length) hintsShown[sp.id]++;
+    document.getElementById("hint").textContent = `Hint (${hintsShown[sp.id]}/${sp.hints.length})`;
+    renderHints(sp);
+  });
+  document.getElementById("reset").addEventListener("click", () => {
+    delete drafts[sp.id]; store.set("spellbook-drafts", drafts); renderSpell();
+  });
+  el.querySelectorAll("input,textarea").forEach(i => i.addEventListener("input", saveDraft));
+  const ta = document.getElementById("editor-" + sp.id);
+  if (ta) ta.addEventListener("keydown", e => {
+    if (e.key === "Tab" && !e.shiftKey) { e.preventDefault(); const s = ta.selectionStart; ta.setRangeText("  ", s, ta.selectionEnd, "end"); saveDraft(); }
+  });
+}
+
+function renderHints(sp){
+  const box = document.getElementById("hints");
+  box.innerHTML = sp.hints.slice(0, hintsShown[sp.id]).map((h,i) => `<div class="hint"><strong>Hint ${i+1}:</strong> ${h}</div>`).join("");
+}
+
+function cast(sp){
+  saveDraft();
+  const code = currentCode(sp);
+  const out = document.getElementById("results");
+  if (!evalAllowed) {
+    out.innerHTML = `<div class="banner warn">This view can't run code. Copy this into the Firefox Console, then type each trial call:</div><div class="codebox">${esc((sp.setup ? sp.setup + "\n\n" : "") + code)}</div>`;
+    return;
+  }
+  if (sp.mode === "slots" && slotInputs().some(i => !i.value.trim())) {
+    out.innerHTML = `<div class="banner warn">Fill every blank first. Empty slots: ${slotInputs().filter(i=>!i.value.trim()).map(i=>esc(i.getAttribute("aria-label"))).join(", ")}.</div>`;
+    return;
+  }
+  let html = ""; let passed = 0;
+  sp.tests.forEach(t => {
+    let got, err = null;
+    try { got = (new Function((sp.setup || "") + "\n" + code + "\nreturn (" + t.call + ");"))(); }
+    catch (e) { err = e.name + ": " + e.message; }
+    const ok = err === null && got === t.expected;
+    if (ok) passed++;
+    html += `<div class="res ${ok ? "pass" : "fail"}">
+      <span class="lbl">Cast</span><code>${esc(t.call)}</code>
+      <span class="lbl">Wanted</span><code>${esc(show(t.expected))}</code>
+      <span class="lbl">${err ? "Error" : "Got"}</span><code>${esc(err ? err : show(got))}</code>
+      <span class="lbl"></span><span class="verdict ${ok ? "pass" : "fail"}">${ok ? "Success" : "Fizzled"}</span>
+    </div>`;
+  });
+  let extra = "";
+  if (sp.mustInclude && !code.includes(sp.mustInclude)) {
+    extra = `<div class="banner warn">The trials can pass without it, but this spell must cast the base spell: use <code class="inline">${esc(sp.mustInclude)}</code>.</div>`;
+  }
+  const all = passed === sp.tests.length && !extra;
+  if (all) { done[sp.id] = true; store.set("spellbook-done", done); renderTabs(); }
+  const head = all
+    ? `<div class="banner">All ${passed} trials succeed. ${esc(sp.title)} is in your spellbook.</div>`
+    : `<p class="note">${passed} of ${sp.tests.length} trials succeed. Read the first fizzle: compare Wanted and Got character by character, or read the error's name.</p>`;
+  out.innerHTML = head + extra + html;
+}
+
+renderTabs();
+renderSpell();
+</script>
+</body>
+</html>
