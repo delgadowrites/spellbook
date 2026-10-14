@@ -72,5 +72,97 @@ const SPELLS = [
       "Each item is an object, so read its hp slot with a dot: <code class=\"inline\">enemy.hp</code>. \"10 or less\" is <code class=\"inline\">&lt;=</code>, so the imp with exactly 10 counts.",
       "Example with different data:<br><code class=\"inline\">let cheap = 0;</code><br><code class=\"inline\">for (let item of cart) { if (item.price &lt; 5) { cheap += 1; } }</code><br><code class=\"inline\">return cheap + \" of \" + cart.length;</code>"
     ]
+  },
+
+  // ===== Scribe tier: objects, arrays and localStorage (added 2026-10-14) =====
+  {
+    id:"familiar", title:"Summon Familiar", level:"Scribe", mode:"slots",
+    request:'Write <code class="inline">summonFamiliar</code>. It takes <code class="inline">name</code> and <code class="inline">kind</code>, and releases a familiar <strong>object</strong> with three keys: <code class="inline">name</code>, <code class="inline">kind</code>, and <code class="inline">loyal</code> (always the boolean true).',
+    components:[{name:"name", desc:"The familiar's name, as text. Example: \"Flora\"."},{name:"kind", desc:"What it is, as text. Example: \"golden hound\"."}],
+    fn:"summonFamiliar",
+    template:[{t:"function "},{slot:"name",ph:"spell name",w:14},{t:"("},{slot:"params",ph:"two components",w:14},{t:") {\n  return "},{slot:"obj",ph:"the object",w:40},{t:";\n}"}],
+    tests:[
+      {call:'summonFamiliar("Flora", "golden hound").name',expected:"Flora"},
+      {call:'summonFamiliar("Flora", "golden hound").kind',expected:"golden hound"},
+      {call:'summonFamiliar("Pip", "owl").loyal',expected:true},
+      {call:'typeof summonFamiliar("Pip", "owl").loyal',expected:"boolean"}
+    ],
+    hints:[
+      "An object is built with <code class=\"inline\">{ }</code>. Inside: <code class=\"inline\">key: value</code> pairs, separated by commas.",
+      "Keys have no quotes. Values that are components have no quotes either: JavaScript uses what's inside the box. <code class=\"inline\">\"true\"</code> with quotes is text, not a boolean; the last trial checks for that.",
+      "Example with different data:<br><code class=\"inline\">return { title: bookName, pages: count, read: false };</code>"
+    ]
+  },
+  {
+    id:"satchel", title:"Fill the Satchel", level:"Scribe", mode:"free",
+    request:'Write <code class="inline">packSatchel</code>. It takes <code class="inline">satchel</code> (an array) and <code class="inline">item</code> (text). It adds an object <code class="inline">{ item: &lt;item&gt;, used: false }</code> to the end of the satchel, then releases how many things are in the satchel now.',
+    components:[{name:"satchel", desc:"An array of item objects. Could be empty."},{name:"item", desc:"The new item's name, as text."}],
+    fn:"packSatchel",
+    starter:"// function packSatchel(satchel, item)\n//   1. Push a new object into satchel: item is the item, used is false\n//   2. Return how many things are in satchel now\n\n",
+    tests:[
+      {call:'packSatchel([], "potion")',expected:1},
+      {call:'packSatchel([{ item: "rope", used: false }], "torch")',expected:2},
+      {call:'(() => { const bag = []; packSatchel(bag, "ether"); return bag[0].item; })()',expected:"ether"},
+      {call:'(() => { const bag = []; packSatchel(bag, "ether"); return bag[0].used; })()',expected:false}
+    ],
+    hints:[
+      "<code class=\"inline\">arrayName.push(thing)</code> adds <code class=\"inline\">thing</code> to the end. The thing can be an object you build right inside the <code class=\"inline\">( )</code>.",
+      "\"How many things\" is the array's <code class=\"inline\">.length</code>, read <strong>after</strong> the push.",
+      "Example with different data:<br><code class=\"inline\">inventory.push({ name: itemName, equipped: false });</code><br><code class=\"inline\">return inventory.length;</code>"
+    ]
+  },
+  {
+    id:"seal", title:"Seal the Scroll", level:"Scribe", mode:"free",
+    hiddenSetup:'const localStorage = (() => { const vault = {}; return { setItem(k, v) { vault[k] = String(v); }, getItem(k) { return k in vault ? vault[k] : null; }, removeItem(k) { delete vault[k]; } }; })();',
+    request:'Write <code class="inline">sealScroll</code>. It takes <code class="inline">quests</code>, an array of quest objects, and saves it in <code class="inline">localStorage</code> under the key <code class="inline">"quests"</code>. It doesn\'t need to release anything.<br><br>Here <code class="inline">localStorage</code> is a practice vault: it works like the real one (text only!) and is wiped after each trial.',
+    components:[{name:"quests", desc:"An array of objects like { text: \"Slay slime\", completed: false }."}],
+    fn:"sealScroll", mustInclude:"JSON.stringify(",
+    starter:"// function sealScroll(quests)\n//   1. Turn the quests array into text\n//   2. Save that text in localStorage under the key \"quests\"\n\n",
+    tests:[
+      {call:'(() => { sealScroll([{ text: "Slay slime", completed: false }]); return localStorage.getItem("quests"); })()',expected:'[{"text":"Slay slime","completed":false}]'},
+      {call:'(() => { sealScroll([{ text: "Feed Flora", completed: true }, { text: "Study", completed: false }]); return localStorage.getItem("quests"); })()',expected:'[{"text":"Feed Flora","completed":true},{"text":"Study","completed":false}]'},
+      {call:'(() => { sealScroll([]); return localStorage.getItem("quests"); })()',expected:"[]"}
+    ],
+    hints:[
+      "If a trial shows <code class=\"inline\">[object Object]</code>, you saved the array itself. <code class=\"inline\">localStorage</code> only keeps text, so turn the array into text first.",
+      "Two built-in pieces: <code class=\"inline\">JSON.stringify(thing)</code> gives back text, and <code class=\"inline\">localStorage.setItem(key, text)</code> saves it. The key is the 1st slot, the text is the 2nd.",
+      "Example with different data:<br><code class=\"inline\">const saved = JSON.stringify(inventory);</code><br><code class=\"inline\">localStorage.setItem(\"inventory\", saved);</code>"
+    ]
+  },
+  {
+    id:"unseal", title:"Unseal the Scroll", level:"Scribe", mode:"free",
+    hiddenSetup:'const localStorage = (() => { const vault = {}; return { setItem(k, v) { vault[k] = String(v); }, getItem(k) { return k in vault ? vault[k] : null; }, removeItem(k) { delete vault[k]; } }; })();',
+    request:'Write <code class="inline">unsealScroll</code>. It takes no components. It reads the text saved under the key <code class="inline">"quests"</code>, turns it back into a real array, and releases that array.<br><br>Each trial puts a sealed scroll in the practice vault first, then casts your spell.',
+    components:[],
+    fn:"unsealScroll", mustInclude:"JSON.parse(",
+    starter:"// function unsealScroll()\n//   1. Get the text saved under the key \"quests\"\n//   2. Turn the text back into an array\n//   3. Return the array\n\n",
+    tests:[
+      {call:'(() => { localStorage.setItem("quests", \'[{"text":"Feed Flora","completed":true}]\'); return unsealScroll()[0].text; })()',expected:"Feed Flora"},
+      {call:'(() => { localStorage.setItem("quests", \'[{"text":"Feed Flora","completed":true}]\'); return unsealScroll()[0].completed; })()',expected:true},
+      {call:'(() => { localStorage.setItem("quests", \'[{"text":"A","completed":false},{"text":"B","completed":false}]\'); return unsealScroll().length; })()',expected:2}
+    ],
+    hints:[
+      "If a trial gives <code class=\"inline\">undefined</code> or the wrong length, you probably returned the text, not an array. <code class=\"inline\">\"[...]\"[0]</code> is just the character <code class=\"inline\">\"[\"</code>.",
+      "Two built-in pieces, the reverse of Seal the Scroll: <code class=\"inline\">localStorage.getItem(key)</code> gives back the saved text, and <code class=\"inline\">JSON.parse(text)</code> turns text back into an array or object.",
+      "Example with different data:<br><code class=\"inline\">const saved = localStorage.getItem(\"inventory\");</code><br><code class=\"inline\">return JSON.parse(saved);</code>"
+    ]
+  },
+  {
+    id:"ledger", title:"Quest Ledger", level:"Archmage", mode:"free",
+    hiddenSetup:'const localStorage = (() => { const vault = {}; return { setItem(k, v) { vault[k] = String(v); }, getItem(k) { return k in vault ? vault[k] : null; }, removeItem(k) { delete vault[k]; } }; })();',
+    request:'Write <code class="inline">questLedger</code>. It takes no components. It loads the quests saved under <code class="inline">"quests"</code>, counts how many have <code class="inline">completed</code> set to true, and releases <code class="inline">&lt;count&gt; of &lt;total&gt; quests cleared</code>',
+    components:[],
+    fn:"questLedger",
+    starter:"// function questLedger()\n//   1. Load the quests: get the text, turn it back into an array\n//   2. Make a counter set to 0\n//   3. For each quest: if it's completed, add 1\n//   4. Return: <count> of <total> quests cleared\n\n",
+    tests:[
+      {call:'(() => { localStorage.setItem("quests", \'[{"text":"Feed Flora","completed":true},{"text":"Study","completed":false},{"text":"Run","completed":true}]\'); return questLedger(); })()',expected:"2 of 3 quests cleared"},
+      {call:'(() => { localStorage.setItem("quests", \'[{"text":"Nap","completed":false}]\'); return questLedger(); })()',expected:"0 of 1 quests cleared"},
+      {call:'(() => { localStorage.setItem("quests", "[]"); return questLedger(); })()',expected:"0 of 0 quests cleared"}
+    ],
+    hints:[
+      "This is Unseal the Scroll plus Chain Lightning: load the array first, then use your counter pattern on it.",
+      "Each quest is an object, so read its slot with a dot: <code class=\"inline\">quest.completed</code>. It's already a boolean, so <code class=\"inline\">quest.completed === true</code> works.",
+      "Example with different data:<br><code class=\"inline\">const items = JSON.parse(localStorage.getItem(\"inventory\"));</code><br><code class=\"inline\">let equipped = 0;</code><br><code class=\"inline\">for (let it of items) { if (it.equipped === true) { equipped += 1; } }</code><br><code class=\"inline\">return equipped + \" of \" + items.length;</code>"
+    ]
   }
 ];

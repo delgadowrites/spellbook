@@ -32,7 +32,7 @@ code,.code{font-family:var(--code);font-size:14px}
 section{display:flex;flex-direction:column;gap:14px}
 .panel{background:var(--panel);border:2px solid var(--line);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
 .codebox{background:#120926;border:1px solid var(--line);border-radius:6px;padding:14px 16px;overflow-x:auto;white-space:pre;font-family:var(--code);font-size:14px;line-height:1.8;color:var(--ink);min-width:0}
-.k{color:var(--magenta)} .n{color:var(--gold)} .s{color:var(--ok)} .c{color:var(--muted)}
+.k{color:#e08cff} .n{color:var(--gold)} .s{color:var(--ok)} .c{color:var(--muted);font-style:italic} .p{color:var(--cyan)}
 .tablewrap{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:15px}
 th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -54,6 +54,10 @@ th{font-family:var(--display);font-size:10px;color:var(--muted);font-weight:400;
 .comp code{color:var(--gold)}
 .comp p{color:var(--muted);font-size:14px}
 .slotcode input{font-family:var(--code);font-size:14px;background:#2b1a52;color:var(--gold);border:1px dashed var(--gold);border-radius:4px;padding:2px 6px;min-width:4ch}
+.editor{position:relative}
+.editor pre.hl{position:absolute;inset:0;margin:0;background:#120926;border:1px solid var(--line);border-radius:6px;padding:14px 16px;font-family:var(--code);font-size:14px;line-height:1.7;tab-size:2;white-space:pre;overflow:hidden;color:var(--ink);pointer-events:none}
+.editor textarea{position:relative;display:block;background:transparent;color:transparent;caret-color:var(--ink);white-space:pre;overflow:auto}
+.editor textarea::selection{background:rgba(0,255,255,.25);color:transparent}
 textarea{width:100%;min-height:220px;resize:vertical;background:#120926;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:14px 16px;font-family:var(--code);font-size:14px;line-height:1.7;tab-size:2}
 .actions{display:flex;flex-wrap:wrap;gap:10px}
 button.btn{font-family:var(--display);font-size:11px;padding:12px 16px;border-radius:4px;border:2px solid var(--gold);background:var(--gold);color:#28154c;cursor:pointer}
@@ -138,8 +142,23 @@ let current = SPELLS[0].id;
 let hintsShown = {};
 
 function esc(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+// Syntax coloring: keywords, strings, numbers, comments, and names after a dot
+function hl(src){
+  const re = /(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?)|\b(function|return|const|let|var|if|else|for|of|in|while|true|false|null|undefined|new)\b|\b(\d+(?:\.\d+)?)\b|\.([A-Za-z_$][\w$]*)/g;
+  let out = "", last = 0, m;
+  while ((m = re.exec(src))) {
+    out += esc(src.slice(last, m.index));
+    if (m[1]) out += `<span class="c">${esc(m[1])}</span>`;
+    else if (m[2]) out += `<span class="s">${esc(m[2])}</span>`;
+    else if (m[3]) out += `<span class="k">${esc(m[3])}</span>`;
+    else if (m[4]) out += `<span class="n">${esc(m[4])}</span>`;
+    else out += `.<span class="p">${esc(m[5])}</span>`;
+    last = re.lastIndex;
+  }
+  return out + esc(src.slice(last));
+}
 function show(v){
-  if (typeof v === "string") return JSON.stringify(v);
+  if (typeof v === "string") return (v.includes('"') && !v.includes("'")) ? "'" + v + "'" : JSON.stringify(v);
   if (v === undefined) return "undefined";
   try { return JSON.stringify(v); } catch(e){ return String(v); }
 }
@@ -180,21 +199,21 @@ function renderSpell(){
   const sp = SPELLS.find(s => s.id === current);
   const el = document.getElementById("spell");
   hintsShown[sp.id] = hintsShown[sp.id] || 0;
-  const comps = sp.components.map(c => `<div class="comp"><code>${esc(c.name)}</code><p>${esc(c.desc)}</p></div>`).join("");
+  const comps = sp.components.length === 0 ? `<div class="comp"><p>None. This spell takes no components: its <code class="inline">( )</code> stay empty.</p></div>` : sp.components.map(c => `<div class="comp"><code>${esc(c.name)}</code><p>${esc(c.desc)}</p></div>`).join("");
   let codeArea = "";
   if (sp.mode === "slots") {
     const saved = drafts[sp.id] || {};
     let html = "";
     sp.template.forEach(p => {
-      if (p.t !== undefined) html += esc(p.t);
+      if (p.t !== undefined) html += hl(p.t);
       else html += `<input data-slot="${p.slot}" id="slot-${sp.id}-${p.slot}" aria-label="${esc(p.ph)}" placeholder="${esc(p.ph)}" size="${p.w}" value="${esc(saved[p.slot] || "")}" spellcheck="false" autocomplete="off">`;
     });
     codeArea = `<h3>Fill the blanks</h3><div class="codebox slotcode">${html}</div>`;
   } else {
     const saved = drafts[sp.id] !== undefined ? drafts[sp.id] : sp.starter;
-    codeArea = `<h3>Write the spell</h3><p class="note">Your plan is already in the editor as comments. Write the code under it.</p><label class="note" for="editor-${sp.id}">Spell code</label><textarea id="editor-${sp.id}" spellcheck="false" autocomplete="off">${esc(saved)}</textarea>`;
+    codeArea = `<h3>Write the spell</h3><p class="note">Your plan is already in the editor as comments. Write the code under it.</p><label class="note" for="editor-${sp.id}">Spell code</label><div class="editor"><pre class="hl" id="hl-${sp.id}" aria-hidden="true">${hl(saved)}\n</pre><textarea id="editor-${sp.id}" wrap="off" spellcheck="false" autocomplete="off">${esc(saved)}</textarea></div>`;
   }
-  const setup = sp.setup ? `<h3>From your spellbook</h3><p class="note">${esc(sp.setupNote)}</p><div class="codebox">${esc(sp.setup)}</div>` : "";
+  const setup = sp.setup ? `<h3>From your spellbook</h3><p class="note">${esc(sp.setupNote)}</p><div class="codebox">${hl(sp.setup)}</div>` : "";
   const testsList = sp.tests.map(t => `<li><code class="inline">${esc(t.call)}</code> → <code class="inline">${esc(show(t.expected))}</code></li>`).join("");
   el.innerHTML = `
     <div class="meta"><span class="tag yours">${esc(sp.level)}</span><span>Spell ${SPELLS.indexOf(sp)+1} of ${SPELLS.length}</span></div>
@@ -225,8 +244,14 @@ function renderSpell(){
   });
   el.querySelectorAll("input,textarea").forEach(i => i.addEventListener("input", saveDraft));
   const ta = document.getElementById("editor-" + sp.id);
+  const pre = document.getElementById("hl-" + sp.id);
+  const repaint = () => { if (pre) { pre.innerHTML = hl(ta.value) + "\n"; pre.scrollTop = ta.scrollTop; pre.scrollLeft = ta.scrollLeft; } };
+  if (ta) {
+    ta.addEventListener("input", repaint);
+    ta.addEventListener("scroll", () => { pre.scrollTop = ta.scrollTop; pre.scrollLeft = ta.scrollLeft; });
+  }
   if (ta) ta.addEventListener("keydown", e => {
-    if (e.key === "Tab" && !e.shiftKey) { e.preventDefault(); const s = ta.selectionStart; ta.setRangeText("  ", s, ta.selectionEnd, "end"); saveDraft(); }
+    if (e.key === "Tab" && !e.shiftKey) { e.preventDefault(); const s = ta.selectionStart; ta.setRangeText("  ", s, ta.selectionEnd, "end"); saveDraft(); repaint(); }
   });
 }
 
@@ -250,7 +275,7 @@ function cast(sp){
   let html = ""; let passed = 0;
   sp.tests.forEach(t => {
     let got, err = null;
-    try { got = (new Function((sp.setup || "") + "\n" + code + "\nreturn (" + t.call + ");"))(); }
+    try { got = (new Function((sp.hiddenSetup || "") + "\n" + (sp.setup || "") + "\n" + code + "\nreturn (" + t.call + ");"))(); }
     catch (e) { err = e.name + ": " + e.message; }
     const ok = err === null && got === t.expected;
     if (ok) passed++;
