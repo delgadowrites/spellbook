@@ -8,11 +8,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: one reading column. Spell glossary on top, then a row of spell tabs, then the active spell card (request, components, code, cast results). Single dark look in Carlos's CGA palette. */
+/* Layout: one reading column. A shelf of tomes (click to open), then the active spell card. Single dark look in Carlos's CGA palette. */
 :root{
-  --bg:#1a0e30; --panel:#28154c; --panel-2:#33205e; --line:#4a3680;
+  --bg:#1a0e30; --panel:#28154c; --panel-2:#33205e; --line:#4a3680; --deep:#120926;
   --ink:#ece7ff; --muted:#b9b0e0;
-  --gold:#ffbf83; --cyan:#00ffff; --magenta:#bf00ff;
+  --gold:#ffbf83; --cyan:#00ffff; --magenta:#bf00ff; --violet:#e08cff;
   --ok:#7dffb0; --bad:#ff9a9a;
   --display:"Press Start 2P", ui-monospace, monospace;
   --body:"Atkinson Hyperlegible", system-ui, sans-serif;
@@ -21,65 +21,100 @@
 }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6;margin:0}
-.wrap{max-width:780px;margin:0 auto;padding-inline:16px;padding-block:28px 64px;display:flex;flex-direction:column;gap:28px}
+.wrap{max-width:820px;margin:0 auto;padding-inline:16px;padding-block:28px 64px;display:flex;flex-direction:column;gap:28px}
 h1{font-family:var(--display);font-size:20px;line-height:1.5;color:var(--gold);margin:0;text-wrap:balance}
 h2{font-family:var(--display);font-size:13px;line-height:1.6;color:var(--cyan);margin:0;letter-spacing:.02em}
-h3{font-family:var(--display);font-size:12px;color:var(--gold);margin:0}
+h3{font-family:var(--display);font-size:11px;line-height:1.6;color:var(--gold);margin:0}
 p{margin:0}
+a{color:var(--cyan)}
 .lede{color:var(--muted);max-width:62ch}
 code,.code{font-family:var(--code);font-size:14px}
 .inline{background:var(--panel-2);border-radius:4px;padding:1px 6px;color:var(--cyan)}
 section{display:flex;flex-direction:column;gap:14px}
 .panel{background:var(--panel);border:2px solid var(--line);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
-.codebox{background:#120926;border:1px solid var(--line);border-radius:6px;padding:14px 16px;overflow-x:auto;white-space:pre;font-family:var(--code);font-size:14px;line-height:1.8;color:var(--ink);min-width:0}
-.k{color:#e08cff} .n{color:var(--gold)} .s{color:var(--ok)} .c{color:var(--muted);font-style:italic} .p{color:var(--cyan)}
+.codebox{background:var(--deep);border:1px solid var(--line);border-radius:6px;padding:14px 16px;overflow-x:auto;white-space:pre;font-family:var(--code);font-size:14px;line-height:1.8;color:var(--ink);min-width:0}
+/* syntax colors */
+.k{color:var(--violet)} .n{color:var(--gold)} .s{color:var(--ok)} .c{color:var(--muted);font-style:italic} .p{color:var(--cyan)}
 .tablewrap{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:15px}
 th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
 th{font-family:var(--display);font-size:10px;color:var(--muted);font-weight:400;letter-spacing:.04em}
+td code.inline{white-space:pre-wrap;word-break:break-word}
+@media (max-width:560px){.runes thead{display:none}.runes table,.runes tbody,.runes tr,.runes td{display:block}.runes tr{border-bottom:1px solid var(--line);padding:8px 0;display:flex;flex-direction:column;gap:4px}.runes td{border:0;padding:0}.runes td:last-child::before{content:"Gives back: ";color:var(--muted)}}
 .tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
 .tag.built{color:var(--magenta);border-color:var(--magenta)}
 .tag.yours{color:var(--gold);border-color:var(--gold)}
-.tabs{display:flex;flex-wrap:wrap;gap:8px}
-.tab{font-family:var(--display);font-size:10px;line-height:1.4;padding:10px 12px;border-radius:4px;border:2px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+
+/* Shelf of tomes */
+.shelf{display:flex;flex-direction:column;gap:10px}
+details.tome{background:var(--panel);border:2px solid var(--line);border-radius:6px}
+details.tome[open]{border-color:var(--gold)}
+details.tome summary{list-style:none;cursor:pointer;padding:12px 14px;display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;align-items:center}
+details.tome summary::-webkit-details-marker{display:none}
+details.tome summary:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.numeral{font-family:var(--display);font-size:12px;color:var(--gold);width:3ch;text-align:center}
+.tome-title{font-family:var(--display);font-size:11px;line-height:1.6;color:var(--ink)}
+.tome-sub{grid-column:2 / 3;color:var(--muted);font-size:14px}
+.prog{font-family:var(--display);font-size:10px;color:var(--muted);white-space:nowrap}
+.prog.full{color:var(--ok)}
+.caret{display:inline-block;transition:transform .15s;color:var(--gold)}
+details[open] .caret{transform:rotate(90deg)}
+.spell-btns{display:flex;flex-wrap:wrap;gap:8px;padding:0 14px 14px}
+.tab{font-family:var(--display);font-size:10px;line-height:1.4;padding:10px 12px;border-radius:4px;border:2px solid var(--line);background:var(--panel-2);color:var(--ink);cursor:pointer}
 .tab:hover{border-color:var(--cyan)}
-.tab[aria-selected="true"]{border-color:var(--gold);color:var(--gold);background:var(--panel-2)}
+.tab[aria-current="true"]{border-color:var(--gold);color:var(--gold);background:var(--deep)}
 .tab .done{color:var(--ok)}
 .tab:focus-visible,button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+
+/* Spell card */
 .meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;color:var(--muted);font-size:14px}
-.request{border-left:4px solid var(--gold);padding-left:14px;border-radius:0}
-.request p{max-width:62ch}
+.request{border-left:4px solid var(--gold);padding-left:14px}
+.request p{max-width:64ch}
 .components{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
 .comp{background:var(--panel-2);border-radius:6px;padding:10px 12px;min-width:0}
 .comp code{color:var(--gold)}
 .comp p{color:var(--muted);font-size:14px}
 .slotcode input{font-family:var(--code);font-size:14px;background:#2b1a52;color:var(--gold);border:1px dashed var(--gold);border-radius:4px;padding:2px 6px;min-width:4ch}
 .editor{position:relative}
-.editor pre.hl{position:absolute;inset:0;margin:0;background:#120926;border:1px solid var(--line);border-radius:6px;padding:14px 16px;font-family:var(--code);font-size:14px;line-height:1.7;tab-size:2;white-space:pre;overflow:hidden;color:var(--ink);pointer-events:none}
+.editor pre.hl{position:absolute;inset:0;margin:0;background:var(--deep);border:1px solid var(--line);border-radius:6px;padding:14px 16px;font-family:var(--code);font-size:14px;line-height:1.7;tab-size:2;white-space:pre;overflow:hidden;color:var(--ink);pointer-events:none}
 .editor textarea{position:relative;display:block;background:transparent;color:transparent;caret-color:var(--ink);white-space:pre;overflow:auto}
 .editor textarea::selection{background:rgba(0,255,255,.25);color:transparent}
-textarea{width:100%;min-height:220px;resize:vertical;background:#120926;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:14px 16px;font-family:var(--code);font-size:14px;line-height:1.7;tab-size:2}
+textarea{width:100%;min-height:240px;resize:vertical;background:var(--deep);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:14px 16px;font-family:var(--code);font-size:14px;line-height:1.7;tab-size:2}
 .actions{display:flex;flex-wrap:wrap;gap:10px}
 button.btn{font-family:var(--display);font-size:11px;padding:12px 16px;border-radius:4px;border:2px solid var(--gold);background:var(--gold);color:#28154c;cursor:pointer}
 button.btn:hover{background:transparent;color:var(--gold)}
 button.btn:active{transform:translate(2px,2px)}
 button.ghost{background:transparent;color:var(--cyan);border-color:var(--cyan)}
 button.ghost:hover{background:var(--cyan);color:#28154c}
+button.fam{background:transparent;color:var(--violet);border-color:var(--violet)}
+button.fam:hover{background:var(--violet);color:#28154c}
 .hints{display:flex;flex-direction:column;gap:8px}
 .hint{background:var(--panel-2);border-radius:6px;padding:10px 12px;font-size:15px}
 .hint strong{color:var(--cyan)}
+.familiar{border:2px dashed var(--violet);border-radius:6px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.familiar .fam-head{font-family:var(--display);font-size:11px;color:var(--violet)}
+.familiar .search{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:15px}
+.preview{width:100%;height:240px;border:2px solid var(--line);border-radius:6px;background:#fff;display:block}
 .results{display:flex;flex-direction:column;gap:8px}
 .res{border:1px solid var(--line);border-radius:6px;padding:10px 12px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px;min-width:0}
 .res .lbl{color:var(--muted);font-size:13px}
 .res code{word-break:break-word;white-space:pre-wrap}
-.res.pass{border-color:var(--ok)} .res.fail{border-color:var(--bad)}
+.res.pass,.check.pass{border-color:var(--ok)} .res.fail,.check.fail{border-color:var(--bad)}
+.check{border:1px solid var(--line);border-radius:6px;padding:10px 12px;display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:15px;min-width:0}
+.check .mark{font-family:var(--display);font-size:12px}
+.check.pass .mark{color:var(--ok)} .check.fail .mark{color:var(--bad)}
+.check .found{grid-column:2;color:var(--muted);font-size:14px;font-family:var(--code);word-break:break-word}
 .verdict{font-family:var(--display);font-size:11px}
 .verdict.pass{color:var(--ok)} .verdict.fail{color:var(--bad)}
 .banner{border:2px solid var(--ok);border-radius:6px;padding:12px 14px;color:var(--ok);font-weight:700}
 .banner.warn{border-color:var(--gold);color:var(--gold);font-weight:400}
 .note{color:var(--muted);font-size:14px}
-@media (max-width:480px){h1{font-size:16px}.res{grid-template-columns:1fr}}
-@media (prefers-reduced-motion:reduce){button.btn:active{transform:none}}
+.trials{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+details.anatomy summary{cursor:pointer;font-family:var(--display);font-size:11px;color:var(--cyan);padding:4px 0}
+details.anatomy[open] summary{margin-bottom:12px}
+details.anatomy > div{display:flex;flex-direction:column;gap:14px}
+@media (max-width:480px){h1{font-size:16px}.res{grid-template-columns:1fr}details.tome summary{grid-template-columns:auto 1fr}.prog{grid-column:2}}
+@media (prefers-reduced-motion:reduce){button.btn:active{transform:none}.caret{transition:none}}
 </style>
 </head>
 <body>
@@ -87,97 +122,170 @@ button.ghost:hover{background:var(--cyan);color:#28154c}
 <div class="wrap">
   <header style="display:flex;flex-direction:column;gap:12px">
     <h1>Spellbook Trainer</h1>
-    <p class="lede">Practice writing JavaScript functions as spells. Each spell request tells you its name, its components and what it should release. Write it, then cast it to run the tests.</p>
+    <p class="lede">Practice HTML, CSS and JavaScript as spells. Open a tome, pick a spell, write it, then cast it to run the trials.</p>
   </header>
 
-  <section aria-labelledby="anatomy-h">
-    <h2 id="anatomy-h">Anatomy of a spell</h2>
-    <div class="codebox" aria-label="Example spell code"><span class="k">function</span> <span class="n">frostNova</span>(<span class="n">target</span>, <span class="n">power</span>) {
+  <section aria-labelledby="shelf-h">
+    <h2 id="shelf-h">The shelf</h2>
+    <div class="shelf" id="shelf"></div>
+  </section>
+
+  <section aria-labelledby="spell-h">
+    <h2 id="spell-h" class="visually-hidden" style="position:absolute;left:-9999px">Current spell</h2>
+    <div id="eval-warning" class="banner warn" hidden>This view blocks running code, so Cast can't test your spell here. Open the Spellbook from your GitHub Pages site instead.</div>
+    <article class="panel" id="spell" aria-live="polite"></article>
+  </section>
+
+  <section>
+    <details class="anatomy">
+      <summary>Anatomy of a function spell</summary>
+      <div>
+        <div class="codebox" aria-label="Example spell code"><span class="k">function</span> <span class="n">frostRay</span>(<span class="n">target</span>, <span class="n">power</span>) {
   <span class="k">const</span> cold = power * 5;
-  <span class="k">return</span> <span class="s">"Frost nova chills "</span> + target + <span class="s">" for "</span> + cold + <span class="s">" cold"</span>;
+  <span class="k">return</span> <span class="s">"Frost ray chills "</span> + target + <span class="s">" for "</span> + cold + <span class="s">" cold"</span>;
 }
 
 <span class="c">// casting it:</span>
-frostNova(<span class="s">"the bat"</span>, 4);   <span class="c">// "Frost nova chills the bat for 20 cold"</span></div>
-    <div class="tablewrap">
-      <table>
-        <thead><tr><th>Spell part</th><th>Code</th><th>Who decides</th></tr></thead>
-        <tbody>
-          <tr><td>Begin the incantation</td><td><code class="inline">function</code></td><td><span class="tag built">built in</span></td></tr>
-          <tr><td>Spell name (a verb or action)</td><td><code class="inline">frostNova</code></td><td><span class="tag yours">your choice</span> must match the request</td></tr>
-          <tr><td>Components, the slots the caster fills</td><td><code class="inline">(target, power)</code></td><td><span class="tag yours">your choice</span> names, separated by commas</td></tr>
-          <tr><td>The ritual circle: everything the spell does</td><td><code class="inline">{ … }</code></td><td><span class="tag built">built in</span></td></tr>
-          <tr><td>A working step inside the spell</td><td><code class="inline">const cold = power * 5;</code></td><td><span class="tag yours">your choice</span></td></tr>
-          <tr><td>The effect the spell releases</td><td><code class="inline">return …;</code></td><td><span class="tag built">return</span> is built in; what follows is yours</td></tr>
-          <tr><td>Casting: filling the components with real values</td><td><code class="inline">frostNova("the bat", 4)</code></td><td>Values land in the slots <strong>by order</strong>: <code class="inline">"the bat"</code> → target, <code class="inline">4</code> → power</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <p class="note">Text joins with <code class="inline">+</code>. Spaces inside the quotes matter: <code class="inline">"Frost nova chills " + target</code> keeps a space before the target's name.</p>
-  </section>
-
-  <section aria-labelledby="spells-h">
-    <h2 id="spells-h">Spell requests</h2>
-    <div class="tabs" role="tablist" id="tabs"></div>
-    <div id="eval-warning" class="banner warn" hidden>This view blocks running code, so Cast can't test your spell here. Copy your spell into the Firefox Console, paste it, then type each test call shown below and compare.</div>
-    <article class="panel" id="spell" aria-live="polite"></article>
+frostRay(<span class="s">"the bat"</span>, 4);   <span class="c">// "Frost ray chills the bat for 20 cold"</span></div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Spell part</th><th>Code</th><th>Who decides</th></tr></thead>
+            <tbody>
+              <tr><td>Begin the incantation</td><td><code class="inline">function</code></td><td><span class="tag built">built in</span></td></tr>
+              <tr><td>Spell name</td><td><code class="inline">frostRay</code></td><td><span class="tag yours">your choice</span> must match the request</td></tr>
+              <tr><td>Components, the slots the caster fills</td><td><code class="inline">(target, power)</code></td><td><span class="tag yours">your choice</span> names, separated by commas</td></tr>
+              <tr><td>The ritual circle: everything the spell does</td><td><code class="inline">{ … }</code></td><td><span class="tag built">built in</span></td></tr>
+              <tr><td>A working step inside the spell</td><td><code class="inline">const cold = power * 5;</code></td><td><span class="tag yours">your choice</span></td></tr>
+              <tr><td>The effect the spell releases</td><td><code class="inline">return …;</code></td><td><span class="tag built">return</span> is built in; what follows is yours</td></tr>
+              <tr><td>Casting: filling the components</td><td><code class="inline">frostRay("the bat", 4)</code></td><td>Values land in the slots <strong>by order</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </details>
   </section>
 </div>
 
-<!-- The spells live in spells.js. Add new spells there. -->
+<!-- The spells live in spells.js. Add new tomes and spells there. -->
 <script src="spells.js"></script>
 <script>
 
+// ---------- Setup ----------
 let evalAllowed = true;
 try { evalAllowed = (new Function("return 7"))() === 7; } catch (e) { evalAllowed = false; }
 if (!evalAllowed) document.getElementById("eval-warning").hidden = false;
+
+// Flat list of spells, each knowing its tome
+const SPELLS = [];
+TOMES.forEach(t => t.spells.forEach(s => { s.tome = t; s.kind = s.kind || "js"; s.mode = s.mode || "free"; SPELLS.push(s); }));
 
 const store = {
   get(k, d){ try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch(e){ return d; } },
   set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
 };
 let done = store.get("spellbook-done", {});
-let drafts = store.get("spellbook-drafts", {});
-let current = SPELLS[0].id;
+let drafts = store.get("spellbook-drafts-v2", {});   // v2: spells were renamed, old drafts don't apply
+let openTomes = store.get("spellbook-open", null);
+let current = (SPELLS.find(s => !done[s.id]) || SPELLS[0]).id;
+if (!openTomes) openTomes = [SPELLS.find(s => s.id === current).tome.id];
 let hintsShown = {};
 
+// ---------- Text helpers ----------
 function esc(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
-// Syntax coloring: keywords, strings, numbers, comments, and names after a dot
-function hl(src){
-  const re = /(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?)|\b(function|return|const|let|var|if|else|for|of|in|while|true|false|null|undefined|new)\b|\b(\d+(?:\.\d+)?)\b|\.([A-Za-z_$][\w$]*)/g;
+function span(cls, t){ return `<span class="${cls}">${esc(t)}</span>`; }
+
+// Syntax coloring for js, html and css
+function hl(src, lang){
+  if (lang === "html") return hlWith(src, /(<!--[\s\S]*?(?:-->|$))|(<!DOCTYPE[^>]*>)|(<\/?)([a-zA-Z][\w-]*)|(\s)([a-zA-Z-]+)(?==)|("[^"\n]*"?)/gi, m =>
+    m[1] ? span("c", m[1]) : m[2] ? span("k", m[2]) : m[4] ? esc(m[3]) + span("k", m[4]) : m[6] ? esc(m[5]) + span("n", m[6]) : span("s", m[7]));
+  if (lang === "css") return hlWith(src, /(\/\*[\s\S]*?(?:\*\/|$))|("[^"\n]*"?)|(--[\w-]+)|([a-z-]+)(?=\s*:)(?![^{};]*\{)|(#[0-9a-fA-F]{3,8}(?![\w-])|-?\b\d+(?:\.\d+)?(?:px|rem|em|%|s|vh|vw)?\b)|([.#][a-zA-Z_][\w-]*)/g, m =>
+    m[1] ? span("c", m[1]) : m[2] ? span("s", m[2]) : m[3] ? span("p", m[3]) : m[4] ? span("k", m[4]) : m[5] ? span("n", m[5]) : span("n", m[6]));
+  return hlWith(src, /(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?)|\b(function|return|const|let|var|if|else|for|of|in|while|true|false|null|undefined|new|typeof)\b|\b(\d+(?:\.\d+)?)\b|\.([A-Za-z_$][\w$]*)/g, m =>
+    m[1] ? span("c", m[1]) : m[2] ? span("s", m[2]) : m[3] ? span("k", m[3]) : m[4] ? span("n", m[4]) : "." + span("p", m[5]));
+}
+function hlWith(src, re, paint){
   let out = "", last = 0, m;
   while ((m = re.exec(src))) {
-    out += esc(src.slice(last, m.index));
-    if (m[1]) out += `<span class="c">${esc(m[1])}</span>`;
-    else if (m[2]) out += `<span class="s">${esc(m[2])}</span>`;
-    else if (m[3]) out += `<span class="k">${esc(m[3])}</span>`;
-    else if (m[4]) out += `<span class="n">${esc(m[4])}</span>`;
-    else out += `.<span class="p">${esc(m[5])}</span>`;
+    if (m[0] === "") { re.lastIndex++; continue; }
+    out += esc(src.slice(last, m.index)) + paint(m);
     last = re.lastIndex;
   }
   return out + esc(src.slice(last));
 }
+function langOf(sp){ return sp.kind === "html" ? "html" : sp.kind === "css" ? "css" : "js"; }
 function show(v){
   if (typeof v === "string") return (v.includes('"') && !v.includes("'")) ? "'" + v + "'" : JSON.stringify(v);
   if (v === undefined) return "undefined";
   try { return JSON.stringify(v); } catch(e){ return String(v); }
 }
 
-function renderTabs(){
-  const tabs = document.getElementById("tabs");
-  tabs.innerHTML = "";
-  SPELLS.forEach(sp => {
-    const b = document.createElement("button");
-    b.className = "tab"; b.type = "button"; b.setAttribute("role","tab"); b.id = "tab-" + sp.id;
-    b.setAttribute("aria-selected", sp.id === current ? "true" : "false");
-    b.innerHTML = esc(sp.title) + (done[sp.id] ? ' <span class="done" aria-label="completed">✓</span>' : "");
-    b.addEventListener("click", () => { saveDraft(); current = sp.id; renderTabs(); renderSpell(); });
-    tabs.appendChild(b);
+// ---------- Practice-page frames ----------
+function pageDoc(sp, userCode){
+  if (sp.kind === "html") return userCode;
+  if (sp.kind === "css") return `<!DOCTYPE html><html><head><style>${sp.baseCss || ""}</style><style>${userCode}</style></head><body>${sp.page}</body></html>`;
+  return `<!DOCTYPE html><html><head><style>${PAGE_LOOK}</style></head><body>${sp.page}</body></html>`;
+}
+function loadFrame(html, frame){
+  return new Promise(resolve => {
+    const f = frame || document.createElement("iframe");
+    if (!frame) {
+      f.setAttribute("aria-hidden", "true"); f.tabIndex = -1;
+      f.style.cssText = "position:absolute;left:-10000px;top:0;width:600px;height:400px;border:0";
+      document.body.appendChild(f);
+    }
+    f.onload = () => resolve(f);
+    f.srcdoc = html;
+  });
+}
+// Runs the caster's script inside a frame; collects any errors it throws (now or later, in listeners)
+function runInFrame(f, code){
+  const win = f.contentWindow, doc = f.contentDocument, errors = [];
+  win.onerror = (msg) => { errors.push(String(msg).replace(/^Uncaught /, "").replace(/Failed to execute 'appendChild' on 'Node': /, "")); return true; };
+  const s = doc.createElement("script");
+  s.textContent = code;
+  doc.body.appendChild(s);
+  return errors;
+}
+
+// ---------- Shelf ----------
+function renderShelf(){
+  const shelf = document.getElementById("shelf");
+  shelf.innerHTML = "";
+  TOMES.forEach(t => {
+    const cleared = t.spells.filter(s => done[s.id]).length;
+    const d = document.createElement("details");
+    d.className = "tome"; d.open = openTomes.includes(t.id);
+    d.innerHTML = `<summary>
+        <span class="numeral">${esc(t.numeral)}</span>
+        <span class="tome-title"><span class="caret" aria-hidden="true">▸</span> ${esc(t.title)}</span>
+        <span class="prog ${cleared === t.spells.length ? "full" : ""}">${cleared} / ${t.spells.length} mastered</span>
+        <span class="tome-sub">${esc(t.theme)} · ${esc(t.topic)} · ${esc(t.step)}</span>
+      </summary>
+      <div class="spell-btns"></div>`;
+    const btns = d.querySelector(".spell-btns");
+    t.spells.forEach(sp => {
+      const b = document.createElement("button");
+      b.className = "tab"; b.type = "button";
+      b.setAttribute("aria-current", sp.id === current ? "true" : "false");
+      b.innerHTML = esc(sp.title) + (done[sp.id] ? ' <span class="done" aria-label="mastered">✓</span>' : "");
+      b.addEventListener("click", () => {
+        saveDraft(); current = sp.id; renderShelf(); renderSpell();
+        document.getElementById("spell").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+      });
+      btns.appendChild(b);
+    });
+    d.addEventListener("toggle", () => {
+      openTomes = openTomes.filter(id => id !== t.id);
+      if (d.open) openTomes.push(t.id);
+      store.set("spellbook-open", openTomes);
+    });
+    shelf.appendChild(d);
   });
 }
 
+// ---------- Drafts ----------
+function curSpell(){ return SPELLS.find(s => s.id === current); }
 function slotInputs(){ return Array.from(document.querySelectorAll("#spell [data-slot]")); }
-
 function currentCode(sp){
   if (sp.mode === "slots") {
     const vals = {}; slotInputs().forEach(i => vals[i.dataset.slot] = i.value);
@@ -186,54 +294,72 @@ function currentCode(sp){
   const ta = document.getElementById("editor-" + sp.id);
   return ta ? ta.value : "";
 }
-
 function saveDraft(){
-  const sp = SPELLS.find(s => s.id === current);
-  if (!sp) return;
+  const sp = curSpell(); if (!sp) return;
   if (sp.mode === "slots") { const vals = {}; slotInputs().forEach(i => vals[i.dataset.slot] = i.value); drafts[sp.id] = vals; }
   else { const ta = document.getElementById("editor-" + sp.id); if (ta) drafts[sp.id] = ta.value; }
-  store.set("spellbook-drafts", drafts);
+  store.set("spellbook-drafts-v2", drafts);
 }
 
+// ---------- Spell card ----------
 function renderSpell(){
-  const sp = SPELLS.find(s => s.id === current);
+  const sp = curSpell();
   const el = document.getElementById("spell");
+  const lang = langOf(sp);
   hintsShown[sp.id] = hintsShown[sp.id] || 0;
-  const comps = sp.components.length === 0 ? `<div class="comp"><p>None. This spell takes no components: its <code class="inline">( )</code> stay empty.</p></div>` : sp.components.map(c => `<div class="comp"><code>${esc(c.name)}</code><p>${esc(c.desc)}</p></div>`).join("");
-  let codeArea = "";
+  const t = sp.tome, idx = t.spells.indexOf(sp) + 1;
+
+  const comps = sp.kind !== "js" ? "" : `<h3>Components</h3><div class="components">${
+    (sp.components || []).length === 0
+      ? `<div class="comp"><p>None. This spell takes no components: its <code class="inline">( )</code> stay empty.</p></div>`
+      : sp.components.map(c => `<div class="comp"><code>${esc(c.name)}</code><p>${esc(c.desc)}</p></div>`).join("")}</div>`;
+
+  const page = sp.page ? `<h3>The practice page (already written)</h3><p class="note">${sp.kind === "css" ? "Your CSS styles this page. Don't change it; select its parts." : "Your JavaScript runs on this page."}</p><div class="codebox">${hl(sp.page, "html")}</div>` : "";
+  const setup = sp.setup ? `<h3>From your spellbook</h3><p class="note">${esc(sp.setupNote)}</p><div class="codebox">${hl(sp.setup, "js")}</div>` : "";
+  const runes = sp.syntax ? `<h3>New runes</h3><p class="note">Every piece of syntax this spell needs.</p><div class="tablewrap runes"><table><thead><tr><th>Rune</th><th>What it does</th><th>Gives back</th></tr></thead><tbody>${sp.syntax.map(r => `<tr><td><code class="inline">${esc(r.rune)}</code></td><td>${r.does}</td><td>${r.gives}</td></tr>`).join("")}</tbody></table></div>` : "";
+
+  let codeArea;
   if (sp.mode === "slots") {
     const saved = drafts[sp.id] || {};
     let html = "";
     sp.template.forEach(p => {
-      if (p.t !== undefined) html += hl(p.t);
-      else html += `<input data-slot="${p.slot}" id="slot-${sp.id}-${p.slot}" aria-label="${esc(p.ph)}" placeholder="${esc(p.ph)}" size="${p.w}" value="${esc(saved[p.slot] || "")}" spellcheck="false" autocomplete="off">`;
+      if (p.t !== undefined) html += hl(p.t, "js");
+      else html += `<input data-slot="${p.slot}" aria-label="${esc(p.ph)}" placeholder="${esc(p.ph)}" size="${p.w}" value="${esc(saved[p.slot] || "")}" spellcheck="false" autocomplete="off">`;
     });
     codeArea = `<h3>Fill the blanks</h3><div class="codebox slotcode">${html}</div>`;
   } else {
     const saved = drafts[sp.id] !== undefined ? drafts[sp.id] : sp.starter;
-    codeArea = `<h3>Write the spell</h3><p class="note">Your plan is already in the editor as comments. Write the code under it.</p><label class="note" for="editor-${sp.id}">Spell code</label><div class="editor"><pre class="hl" id="hl-${sp.id}" aria-hidden="true">${hl(saved)}\n</pre><textarea id="editor-${sp.id}" wrap="off" spellcheck="false" autocomplete="off">${esc(saved)}</textarea></div>`;
+    const what = { html: "HTML", css: "CSS", js: "JavaScript" }[lang];
+    codeArea = `<h3>Write the spell</h3><p class="note">Your plan is already in the editor as comments, one comment per line of code. Write the ${what} under it.</p><label class="note" for="editor-${sp.id}">Spell code (${what})</label><div class="editor"><pre class="hl" id="hl-${sp.id}" aria-hidden="true">${hl(saved, lang)}\n</pre><textarea id="editor-${sp.id}" wrap="off" spellcheck="false" autocomplete="off">${esc(saved)}</textarea></div>`;
   }
-  const runes = sp.syntax ? `<h3>New runes</h3><p class="note">Every piece of syntax this spell needs that you haven't used in a spell before.</p><div class="tablewrap"><table><thead><tr><th>Rune</th><th>What it does</th><th>Gives back</th></tr></thead><tbody>${sp.syntax.map(r => `<tr><td><code class="inline">${esc(r.rune)}</code></td><td>${r.does}</td><td>${r.gives}</td></tr>`).join("")}</tbody></table></div>` : "";
-  const setup = sp.setup ? `<h3>From your spellbook</h3><p class="note">${esc(sp.setupNote)}</p><div class="codebox">${hl(sp.setup)}</div>` : "";
-  const testsList = sp.tests.map(t => `<li><code class="inline">${esc(t.call)}</code> → <code class="inline">${esc(show(t.expected))}</code></li>`).join("");
+
+  const preview = sp.kind === "js" ? "" : `<h3>Preview</h3><p class="note">${sp.kind === "dom" ? "The practice page with your spell running. Try it: type, click, submit." : "Updates as you type."}</p><iframe class="preview" id="preview" title="Preview of your spell"></iframe>`;
+  const trialsList = sp.kind === "js"
+    ? sp.tests.map(tr => `<li><code class="inline">${esc(tr.call)}</code> → <code class="inline">${esc(show(tr.expected))}</code></li>`).join("")
+    : sp.checks.map(c => `<li>${esc(c.label)}</li>`).join("");
+
   el.innerHTML = `
-    <div class="meta"><span class="tag yours">${esc(sp.level)}</span><span>Spell ${SPELLS.indexOf(sp)+1} of ${SPELLS.length}</span></div>
+    <div class="meta"><span class="tag yours">${esc(t.numeral)} · ${esc(t.title)}</span><span class="tag">${esc(t.topic)}</span><span>Spell ${idx} of ${t.spells.length}</span></div>
     <h2>${esc(sp.title)}</h2>
     <div class="request"><p>${sp.request}</p></div>
-    <h3>Components</h3>
-    <div class="components">${comps}</div>
+    ${comps}
+    ${page}
     ${setup}
     ${runes}
     ${codeArea}
     <div class="actions">
       <button class="btn" type="button" id="cast">Cast spell</button>
       <button class="btn ghost" type="button" id="hint">Hint (${hintsShown[sp.id]}/${sp.hints.length})</button>
+      <button class="btn fam" type="button" id="fam-btn" aria-expanded="false">🐾 Summon Familiar</button>
       <button class="btn ghost" type="button" id="reset">Reset</button>
     </div>
     <div class="hints" id="hints"></div>
+    <div id="familiar" hidden></div>
+    ${preview}
     <h3>Trials</h3>
-    <ul class="note" style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px">${testsList}</ul>
+    <ul class="note trials">${trialsList}</ul>
     <div class="results" id="results"></div>`;
+
   renderHints(sp);
   document.getElementById("cast").addEventListener("click", () => cast(sp));
   document.getElementById("hint").addEventListener("click", () => {
@@ -241,66 +367,141 @@ function renderSpell(){
     document.getElementById("hint").textContent = `Hint (${hintsShown[sp.id]}/${sp.hints.length})`;
     renderHints(sp);
   });
+  document.getElementById("fam-btn").addEventListener("click", () => toggleFamiliar(sp));
   document.getElementById("reset").addEventListener("click", () => {
-    delete drafts[sp.id]; store.set("spellbook-drafts", drafts); renderSpell();
+    delete drafts[sp.id]; store.set("spellbook-drafts-v2", drafts); renderSpell();
   });
-  el.querySelectorAll("input,textarea").forEach(i => i.addEventListener("input", saveDraft));
+
+  el.querySelectorAll("input,textarea").forEach(i => i.addEventListener("input", () => { saveDraft(); schedulePreview(sp); }));
   const ta = document.getElementById("editor-" + sp.id);
   const pre = document.getElementById("hl-" + sp.id);
-  const repaint = () => { if (pre) { pre.innerHTML = hl(ta.value) + "\n"; pre.scrollTop = ta.scrollTop; pre.scrollLeft = ta.scrollLeft; } };
   if (ta) {
+    const repaint = () => { pre.innerHTML = hl(ta.value, lang) + "\n"; pre.scrollTop = ta.scrollTop; pre.scrollLeft = ta.scrollLeft; };
     ta.addEventListener("input", repaint);
     ta.addEventListener("scroll", () => { pre.scrollTop = ta.scrollTop; pre.scrollLeft = ta.scrollLeft; });
+    ta.addEventListener("keydown", e => {
+      if (e.key === "Tab" && !e.shiftKey) { e.preventDefault(); const s = ta.selectionStart; ta.setRangeText("  ", s, ta.selectionEnd, "end"); saveDraft(); repaint(); schedulePreview(sp); }
+    });
   }
-  if (ta) ta.addEventListener("keydown", e => {
-    if (e.key === "Tab" && !e.shiftKey) { e.preventDefault(); const s = ta.selectionStart; ta.setRangeText("  ", s, ta.selectionEnd, "end"); saveDraft(); repaint(); }
-  });
+  updatePreview(sp);
 }
 
 function renderHints(sp){
-  const box = document.getElementById("hints");
-  box.innerHTML = sp.hints.slice(0, hintsShown[sp.id]).map((h,i) => `<div class="hint"><strong>Hint ${i+1}:</strong> ${h}</div>`).join("");
+  document.getElementById("hints").innerHTML = sp.hints.slice(0, hintsShown[sp.id]).map((h, i) => `<div class="hint"><strong>Hint ${i+1}:</strong> ${h}</div>`).join("");
 }
 
-function cast(sp){
+function toggleFamiliar(sp){
+  const box = document.getElementById("familiar"), btn = document.getElementById("fam-btn");
+  if (!box.hidden) { box.hidden = true; btn.setAttribute("aria-expanded", "false"); return; }
+  const f = sp.familiar;
+  box.className = "familiar";
+  box.innerHTML = `
+    <div class="fam-head">🐾 Your familiar appears</div>
+    <p>Here are the runes at work, on different data. I won't cast your spell for you. <strong>If you needed me, this is the moment to Google it.</strong></p>
+    <div class="codebox">${hl(f.code, f.lang)}</div>
+    <div class="search"><span>Search for:</span><code class="inline">${esc(f.search)}</code>
+      <a href="https://developer.mozilla.org/en-US/search?q=${encodeURIComponent(f.search)}" target="_blank" rel="noopener">Search MDN ↗</a></div>`;
+  box.hidden = false; btn.setAttribute("aria-expanded", "true");
+}
+
+// ---------- Live preview ----------
+let previewTimer = null;
+function schedulePreview(sp){ clearTimeout(previewTimer); previewTimer = setTimeout(() => updatePreview(sp), 350); }
+async function updatePreview(sp){
+  const f = document.getElementById("preview");
+  if (!f || sp.id !== current) return;
+  const code = currentCode(sp);
+  try {
+    await loadFrame(pageDoc(sp, code), f);
+    if (sp.kind === "dom" && evalAllowed) runInFrame(f, (sp.setup || "") + "\n" + code);
+  } catch (e) { /* preview is best-effort */ }
+}
+
+// ---------- Casting ----------
+async function cast(sp){
   saveDraft();
   const code = currentCode(sp);
   const out = document.getElementById("results");
-  if (!evalAllowed) {
-    out.innerHTML = `<div class="banner warn">This view can't run code. Copy this into the Firefox Console, then type each trial call:</div><div class="codebox">${esc((sp.setup ? sp.setup + "\n\n" : "") + code)}</div>`;
-    return;
-  }
+  if (!evalAllowed) { out.innerHTML = `<div class="banner warn">This view can't run code. Open the Spellbook from GitHub Pages to cast.</div>`; return; }
   if (sp.mode === "slots" && slotInputs().some(i => !i.value.trim())) {
-    out.innerHTML = `<div class="banner warn">Fill every blank first. Empty slots: ${slotInputs().filter(i=>!i.value.trim()).map(i=>esc(i.getAttribute("aria-label"))).join(", ")}.</div>`;
+    out.innerHTML = `<div class="banner warn">Fill every blank first. Empty slots: ${slotInputs().filter(i => !i.value.trim()).map(i => esc(i.getAttribute("aria-label"))).join(", ")}.</div>`;
     return;
   }
-  let html = ""; let passed = 0;
-  sp.tests.forEach(t => {
-    let got, err = null;
-    try { got = (new Function((sp.hiddenSetup || "") + "\n" + (sp.setup || "") + "\n" + code + "\nreturn (" + t.call + ");"))(); }
-    catch (e) { err = e.name + ": " + e.message; }
-    const ok = err === null && got === t.expected;
-    if (ok) passed++;
-    html += `<div class="res ${ok ? "pass" : "fail"}">
-      <span class="lbl">Cast</span><code>${esc(t.call)}</code>
-      <span class="lbl">Wanted</span><code>${esc(show(t.expected))}</code>
-      <span class="lbl">${err ? "Error" : "Got"}</span><code>${esc(err ? err : show(got))}</code>
-      <span class="lbl"></span><span class="verdict ${ok ? "pass" : "fail"}">${ok ? "Success" : "Fizzled"}</span>
-    </div>`;
-  });
-  let extra = "";
-  if (sp.mustInclude && !code.includes(sp.mustInclude)) {
-    extra = `<div class="banner warn">The trials can pass without it, but this spell must cast the base spell: use <code class="inline">${esc(sp.mustInclude)}</code>.</div>`;
+  out.innerHTML = `<p class="note">Casting…</p>`;
+  let rows = [], passed = 0, total = 0;
+
+  if (sp.kind === "js") {
+    total = sp.tests.length;
+    sp.tests.forEach(t => {
+      let got, err = null;
+      try { got = (new Function((sp.hiddenSetup || "") + "\n" + (sp.setup || "") + "\n" + code + "\nreturn (" + t.call + ");"))(); }
+      catch (e) { err = e.name + ": " + e.message; }
+      const ok = err === null && got === t.expected;
+      if (ok) passed++;
+      rows.push(`<div class="res ${ok ? "pass" : "fail"}">
+        <span class="lbl">Cast</span><code>${esc(t.call)}</code>
+        <span class="lbl">Wanted</span><code>${esc(show(t.expected))}</code>
+        <span class="lbl">${err ? "Error" : "Got"}</span><code>${esc(err ? err : show(got))}</code>
+        <span class="lbl"></span><span class="verdict ${ok ? "pass" : "fail"}">${ok ? "Success" : "Fizzled"}</span>
+      </div>`);
+    });
+  } else {
+    total = sp.checks.length;
+    let results;
+    try { results = await runChecks(sp, code); }
+    catch (e) { out.innerHTML = `<div class="banner warn">The trials couldn't open the practice page here (${esc(e.message)}). Open the Spellbook from GitHub Pages to cast.</div>`; return; }
+    results.forEach(([c, r]) => {
+      const ok = r === true;
+      if (ok) passed++;
+      rows.push(`<div class="check ${ok ? "pass" : "fail"}"><span class="mark">${ok ? "✓" : "✗"}</span><span>${esc(c.label)}</span>${ok ? "" : `<span class="found">${esc(r)}</span>`}</div>`);
+    });
   }
-  const all = passed === sp.tests.length && !extra;
-  if (all) { done[sp.id] = true; store.set("spellbook-done", done); renderTabs(); }
+
+  let extra = "";
+  if (sp.mustInclude && !code.includes(sp.mustInclude)) extra = `<div class="banner warn">The trials can pass without it, but this spell must use <code class="inline">${esc(sp.mustInclude)}</code>.</div>`;
+  const all = passed === total && !extra;
+  if (all) { done[sp.id] = true; store.set("spellbook-done", done); renderShelf(); }
   const head = all
-    ? `<div class="banner">All ${passed} trials succeed. ${esc(sp.title)} is in your spellbook.</div>`
-    : `<p class="note">${passed} of ${sp.tests.length} trials succeed. Read the first fizzle: compare Wanted and Got character by character, or read the error's name.</p>`;
-  out.innerHTML = head + extra + html;
+    ? `<div class="banner">All ${total} trials succeed. ${esc(sp.title)} is in your spellbook.</div>`
+    : `<p class="note">${passed} of ${total} trials succeed. Read the first ✗ or fizzle: compare what was wanted with what was found.</p>`;
+  out.innerHTML = head + extra + rows.join("");
+  if (sp.kind === "dom") updatePreview(sp);
 }
 
-renderTabs();
+async function runChecks(sp, code){
+  const results = [];
+  if (sp.kind === "html" || sp.kind === "css") {
+    const f = await loadFrame(pageDoc(sp, code));
+    try {
+      for (const c of sp.checks) {
+        let r;
+        try { r = sp.kind === "html" ? c.test(f.contentDocument, code) : c.test(f.contentDocument, f.contentWindow, code); }
+        catch (e) { r = "Couldn't check: " + e.message; }
+        results.push([c, r === true ? true : String(r)]);
+      }
+    } finally { f.remove(); }
+    return results;
+  }
+  // dom: every trial gets a fresh copy of the practice page
+  for (const c of sp.checks) {
+    if (c.src) { results.push([c, c.src(code) === true ? true : String(c.src(code))]); continue; }
+    const f = await loadFrame(pageDoc(sp, code));
+    let r;
+    try {
+      const errors = runInFrame(f, (sp.setup || "") + "\n" + code);
+      if (errors.length) r = "Your spell didn't run. Error: " + errors[0];
+      else {
+        try { r = c.run(f.contentWindow, f.contentDocument); }
+        catch (e) { r = e.name + ": " + e.message; }
+        if (r !== true && errors.length) r = String(r) + " · Error: " + errors[0];
+      }
+    } finally { f.remove(); }
+    results.push([c, r === true ? true : String(r)]);
+  }
+  return results;
+}
+
+renderShelf();
 renderSpell();
 </script>
 </body>
