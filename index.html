@@ -213,6 +213,7 @@ function renderSpell(){
     const saved = drafts[sp.id] !== undefined ? drafts[sp.id] : sp.starter;
     codeArea = `<h3>Write the spell</h3><p class="note">Your plan is already in the editor as comments. Write the code under it.</p><label class="note" for="editor-${sp.id}">Spell code</label><div class="editor"><pre class="hl" id="hl-${sp.id}" aria-hidden="true">${hl(saved)}\n</pre><textarea id="editor-${sp.id}" wrap="off" spellcheck="false" autocomplete="off">${esc(saved)}</textarea></div>`;
   }
+  const runes = sp.syntax ? `<h3>New runes</h3><p class="note">Every piece of syntax this spell needs that you haven't used in a spell before.</p><div class="tablewrap"><table><thead><tr><th>Rune</th><th>What it does</th><th>Gives back</th></tr></thead><tbody>${sp.syntax.map(r => `<tr><td><code class="inline">${esc(r.rune)}</code></td><td>${r.does}</td><td>${r.gives}</td></tr>`).join("")}</tbody></table></div>` : "";
   const setup = sp.setup ? `<h3>From your spellbook</h3><p class="note">${esc(sp.setupNote)}</p><div class="codebox">${hl(sp.setup)}</div>` : "";
   const testsList = sp.tests.map(t => `<li><code class="inline">${esc(t.call)}</code> → <code class="inline">${esc(show(t.expected))}</code></li>`).join("");
   el.innerHTML = `
@@ -222,6 +223,7 @@ function renderSpell(){
     <h3>Components</h3>
     <div class="components">${comps}</div>
     ${setup}
+    ${runes}
     ${codeArea}
     <div class="actions">
       <button class="btn" type="button" id="cast">Cast spell</button>

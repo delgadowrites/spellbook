@@ -80,6 +80,10 @@ const SPELLS = [
     request:'Write <code class="inline">summonFamiliar</code>. It takes <code class="inline">name</code> and <code class="inline">kind</code>, and releases a familiar <strong>object</strong> with three keys: <code class="inline">name</code>, <code class="inline">kind</code>, and <code class="inline">loyal</code> (always the boolean true).',
     components:[{name:"name", desc:"The familiar's name, as text. Example: \"Flora\"."},{name:"kind", desc:"What it is, as text. Example: \"golden hound\"."}],
     fn:"summonFamiliar",
+    syntax:[
+      {rune:'{ key: value, key2: value2 }', does:'Builds a new object. Keys have no quotes. Pairs are separated by commas.', gives:'The object'},
+      {rune:'true / false', does:'Booleans. No quotes: <code class="inline">"true"</code> with quotes is text.', gives:'—'}
+    ],
     template:[{t:"function "},{slot:"name",ph:"spell name",w:14},{t:"("},{slot:"params",ph:"two components",w:14},{t:") {\n  return "},{slot:"obj",ph:"the object",w:40},{t:";\n}"}],
     tests:[
       {call:'summonFamiliar("Flora", "golden hound").name',expected:"Flora"},
@@ -98,7 +102,11 @@ const SPELLS = [
     request:'Write <code class="inline">packSatchel</code>. It takes <code class="inline">satchel</code> (an array) and <code class="inline">item</code> (text). It adds an object <code class="inline">{ item: &lt;item&gt;, used: false }</code> to the end of the satchel, then releases how many things are in the satchel now.',
     components:[{name:"satchel", desc:"An array of item objects. Could be empty."},{name:"item", desc:"The new item's name, as text."}],
     fn:"packSatchel",
-    starter:"// function packSatchel(satchel, item)\n//   1. Push a new object into satchel: item is the item, used is false\n//   2. Return how many things are in satchel now\n\n",
+    syntax:[
+      {rune:'array.push(thing)', does:'Adds <code class="inline">thing</code> to the end of the array. Changes the array itself.', gives:'(not needed here)'},
+      {rune:'array.length', does:'How many things are in the array. No <code class="inline">( )</code>: it\'s a property, not a call.', gives:'A number'}
+    ],
+    starter:"// function packSatchel(satchel, item)\n//   Line 1: push a new object into satchel (item: the item, used: false)\n//   Line 2: return satchel's length\n\n",
     tests:[
       {call:'packSatchel([], "potion")',expected:1},
       {call:'packSatchel([{ item: "rope", used: false }], "torch")',expected:2},
@@ -117,7 +125,11 @@ const SPELLS = [
     request:'Write <code class="inline">sealScroll</code>. It takes <code class="inline">quests</code>, an array of quest objects, and saves it in <code class="inline">localStorage</code> under the key <code class="inline">"quests"</code>. It doesn\'t need to release anything.<br><br>Here <code class="inline">localStorage</code> is a practice vault: it works like the real one (text only!) and is wiped after each trial.',
     components:[{name:"quests", desc:"An array of objects like { text: \"Slay slime\", completed: false }."}],
     fn:"sealScroll", mustInclude:"JSON.stringify(",
-    starter:"// function sealScroll(quests)\n//   1. Turn the quests array into text\n//   2. Save that text in localStorage under the key \"quests\"\n\n",
+    syntax:[
+      {rune:'JSON.stringify(thing)', does:'Makes a text copy of an array or object. Does <strong>not</strong> change <code class="inline">thing</code>: catch the result in a box.', gives:'Text'},
+      {rune:'localStorage.setItem(key, text)', does:'Saves the text under the key. 1st slot = key, 2nd slot = text.', gives:'(nothing)'}
+    ],
+    starter:"// function sealScroll(quests)\n//   Line 1: const text = quests turned into text\n//   Line 2: save text in localStorage under the key \"quests\"\n//   (Optional: these 2 lines can be 1.\n//    Put line 1's right side into line 2's slot.)\n\n",
     tests:[
       {call:'(() => { sealScroll([{ text: "Slay slime", completed: false }]); return localStorage.getItem("quests"); })()',expected:'[{"text":"Slay slime","completed":false}]'},
       {call:'(() => { sealScroll([{ text: "Feed Flora", completed: true }, { text: "Study", completed: false }]); return localStorage.getItem("quests"); })()',expected:'[{"text":"Feed Flora","completed":true},{"text":"Study","completed":false}]'},
@@ -135,7 +147,11 @@ const SPELLS = [
     request:'Write <code class="inline">unsealScroll</code>. It takes no components. It reads the text saved under the key <code class="inline">"quests"</code>, turns it back into a real array, and releases that array.<br><br>Each trial puts a sealed scroll in the practice vault first, then casts your spell.',
     components:[],
     fn:"unsealScroll", mustInclude:"JSON.parse(",
-    starter:"// function unsealScroll()\n//   1. Get the text saved under the key \"quests\"\n//   2. Turn the text back into an array\n//   3. Return the array\n\n",
+    syntax:[
+      {rune:'localStorage.getItem(key)', does:'Reads what was saved under the key.', gives:'Text (or <code class="inline">null</code> if nothing was saved)'},
+      {rune:'JSON.parse(text)', does:'Makes a real array or object from the text. Does <strong>not</strong> change <code class="inline">text</code>: the result comes back, so return it or catch it in a box.', gives:'An array or object'}
+    ],
+    starter:"// function unsealScroll()\n//   Line 1: const text = what's saved under the key \"quests\"\n//   Line 2: return text turned into an array\n//   (JSON.parse gives back the array;\n//    return releases it.)\n\n",
     tests:[
       {call:'(() => { localStorage.setItem("quests", \'[{"text":"Feed Flora","completed":true}]\'); return unsealScroll()[0].text; })()',expected:"Feed Flora"},
       {call:'(() => { localStorage.setItem("quests", \'[{"text":"Feed Flora","completed":true}]\'); return unsealScroll()[0].completed; })()',expected:true},
@@ -153,7 +169,7 @@ const SPELLS = [
     request:'Write <code class="inline">questLedger</code>. It takes no components. It loads the quests saved under <code class="inline">"quests"</code>, counts how many have <code class="inline">completed</code> set to true, and releases <code class="inline">&lt;count&gt; of &lt;total&gt; quests cleared</code>',
     components:[],
     fn:"questLedger",
-    starter:"// function questLedger()\n//   1. Load the quests: get the text, turn it back into an array\n//   2. Make a counter set to 0\n//   3. For each quest: if it's completed, add 1\n//   4. Return: <count> of <total> quests cleared\n\n",
+    starter:"// function questLedger()\n//   Line 1: const text = what's saved under the key \"quests\"\n//   Line 2: const quests = text turned into an array\n//   Line 3: let count = 0\n//   Loop: for each quest in quests, if it's completed, add 1 to count\n//   Last line: return <count> of <total> quests cleared\n\n",
     tests:[
       {call:'(() => { localStorage.setItem("quests", \'[{"text":"Feed Flora","completed":true},{"text":"Study","completed":false},{"text":"Run","completed":true}]\'); return questLedger(); })()',expected:"2 of 3 quests cleared"},
       {call:'(() => { localStorage.setItem("quests", \'[{"text":"Nap","completed":false}]\'); return questLedger(); })()',expected:"0 of 1 quests cleared"},
