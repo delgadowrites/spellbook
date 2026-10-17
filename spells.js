@@ -1,4 +1,6 @@
-// SPELLBOOK DATA: Tome VII only (session 2026-10-15, To-do Step 8c-3: load saved tasks)
+// SPELLBOOK DATA: Tome VIII only (session 2026-10-16)
+// Topics: Problem 7 (palindrome: backward loop, lowercase, booleans) and
+//         To-do Step 8c-4a (a unique id on every task: crypto.randomUUID, dataset, migration)
 // Works with the existing index.html unchanged.
 // Every spell here is kind "js": write a function; trials cast it and compare Wanted vs Got.
 // Help, in order of strength:
@@ -6,228 +8,266 @@
 //   hints    – logic nudges only, never code
 //   familiar – a working example of the syntax on different data, plus what to Google
 
-// Practice vault: works like localStorage (text only), wiped after each trial
-const VAULT = 'const localStorage = (() => { const vault = {}; return { setItem(k, v) { vault[k] = String(v); }, getItem(k) { return k in vault ? vault[k] : null; }, removeItem(k) { delete vault[k]; } }; })();';
-
-// A saved army used by several trials (the trials read this global)
-const ARMY_TEXT = '[{"name":"Skeleton","risen":true},{"name":"Ghoul","risen":false}]';
-
 const TOMES = [
 
   // ======================================================================
   {
-    id: "necromancy", numeral: "VII", title: "Necromancy", theme: "Raising what was saved",
-    topic: "Loading saved data", step: "To-do Step 8c-3",
+    id: "soulbinding", numeral: "VIII", title: "Soulbinding", theme: "Body, soul and sigil",
+    topic: "Unique ids + backward loops", step: "Problem 7 · To-do Step 8c-4a",
     spells: [
 
       // ---------------------------------------------------------------
       {
-        id: "speak", title: "Speak with Dead", kind: "js", mode: "free", hiddenSetup: VAULT,
-        request: `Write <code class="inline">speakWithDead</code>. It takes <code class="inline">key</code>. It asks the vault what's saved under that key. If nothing was ever saved there, it releases <code class="inline">Only silence answers.</code> Otherwise it releases what was saved.<br><br>Here <code class="inline">localStorage</code> is a practice vault: it works like the real one (text only) and is wiped after each trial.`,
-        components: [{ name: "key", desc: "The name the message was saved under, as text. Example: \"ghost\"." }],
-        syntax: [
-          { rune: `localStorage.getItem(key)`, does: `Reads the text saved under the key. Here <code class="inline">key</code> is a component, so no quotes. Keys must match <strong>exactly</strong>: <code class="inline">"ghost"</code> and <code class="inline">"Ghost"</code> are different keys.`, gives: `The saved text, or <code class="inline">null</code> if nothing was ever saved there (no error)` },
-          { rune: `null`, does: `JavaScript's "nothing here" value. No quotes: <code class="inline">"null"</code> with quotes is text, and it is <strong>not</strong> <code class="inline">null</code>.`, gives: `—` },
-          { rune: `box === null`, does: `Asks "is this box holding nothing?"`, gives: `true or false` },
-          { rune: `return …;`, does: `Releases the value <strong>and stops the spell</strong>. Nothing below it runs.`, gives: `The value after it` }
-        ],
-        starter: `// function speakWithDead(key)
-//   Line 1: const answer = what's saved under key (key is a component: no quotes)
-//   Guard:  if answer is null:
-//             return "Only silence answers."
-//   Last line: return answer
-
-`,
-        tests: [
-          { call: '(() => { localStorage.setItem("ghost", "The treasure is under the mill."); return speakWithDead("ghost"); })()', expected: "The treasure is under the mill." },
-          { call: 'speakWithDead("ghost")', expected: "Only silence answers." },
-          { call: '(() => { localStorage.setItem("ghost", "Boo."); return speakWithDead("Ghost"); })()', expected: "Only silence answers." }
-        ],
-        hints: [
-          `Asking the vault never causes an error. When nothing is there, it hands back a special "nothing" value instead.`,
-          `Check for the empty case first and leave early. The normal answer can be the last line.`,
-          `The last trial saves under one key and asks with another. Look at the two keys letter by letter.`
-        ],
-        familiar: {
-          lang: "js", search: "JavaScript localStorage getItem returns null",
-          code: `const lastVisit = localStorage.getItem("lastVisit");
-console.log(lastVisit === null); // true on a first visit
-console.log("null" === null);    // false: quotes make text`
-        }
-      },
-
-      // ---------------------------------------------------------------
-      {
-        id: "repose", title: "Gentle Repose", kind: "js", mode: "free", hiddenSetup: VAULT,
-        request: `Write <code class="inline">gentleRepose</code>. It takes <code class="inline">key</code>. It reads what's saved under the key into a box. If nothing is saved there, it changes <strong>that same box</strong> to the text <code class="inline">"[]"</code> (an empty array written as text). It releases the box.<br><br>The spell preserves an empty record, so later spells never have to touch <code class="inline">null</code>.`,
-        components: [{ name: "key", desc: "The key to read, as text. Example: \"crypt\"." }],
-        mustInclude: "let ",
-        syntax: [
-          { rune: `let name = …;`, does: `Creates a box you are allowed to change later.`, gives: `—` },
-          { rune: `const name = …;`, does: `Creates a box that can <strong>never</strong> get a new value. Gotcha: <code class="inline">name = …;</code> later gives <code class="inline">TypeError: invalid assignment to const</code>.`, gives: `—` },
-          { rune: `name = newValue;`, does: `Changes a box that already exists. <strong>No keyword.</strong> Gotcha: writing <code class="inline">let name = …;</code> inside an <code class="inline">if { }</code> creates a <em>new</em> box that disappears at the <code class="inline">}</code>; the outer box never changes.`, gives: `—` },
-          { rune: `"[]"`, does: `An empty array <strong>written as text</strong> (quotes). This is what the vault stores and what <code class="inline">JSON.parse</code> can read. Without quotes, <code class="inline">[]</code> is a real array, not text.`, gives: `—` }
-        ],
-        starter: `// function gentleRepose(key)
-//   Line 1: let record = what's saved under key (let: this box may change)
-//   Guard:  if record is null:
-//             change record to "[]" (no keyword: same box)
-//   Last line: return record
-
-`,
-        tests: [
-          { call: 'gentleRepose("crypt")', expected: "[]" },
-          { call: 'typeof gentleRepose("crypt")', expected: "string" },
-          { call: '(() => { localStorage.setItem("crypt", \'[{"name":"Old King"}]\'); return gentleRepose("crypt"); })()', expected: '[{"name":"Old King"}]' }
-        ],
-        hints: [
-          `The box only changes in one case. In the other case, it keeps what the vault gave it.`,
-          `Changing a box and creating a box look almost the same. One of them starts with a keyword.`,
-          `The vault only ever gives back text, so the fallback should be text too. The second trial checks its type.`
-        ],
-        familiar: {
-          lang: "js", search: "JavaScript let vs const reassign block scope",
-          code: `let torches = 3;
-if (nightfall === true) {
-  torches = 5;          // same box, new value
-}
-const emptyMap = "[]";  // text that looks like an empty array`
-        }
-      },
-
-      // ---------------------------------------------------------------
-      {
-        id: "raise", title: "Raise Dead", kind: "js", mode: "free", hiddenSetup: VAULT,
-        request: `Write <code class="inline">raiseDead</code>. It takes no components. It loads the undead army saved under the key <code class="inline">"army"</code>. If nothing is saved, it uses <code class="inline">"[]"</code> instead. It turns the text into a real array and releases it.<br><br>It must release an <strong>array every time</strong>, even on a first visit when the vault is empty.`,
-        components: [],
-        mustInclude: "JSON.parse(",
-        syntax: [
-          { rune: `localStorage.getItem("army")`, does: `Reads the text saved under <code class="inline">"army"</code>. Typed directly, the key needs quotes.`, gives: `Text, or <code class="inline">null</code>` },
-          { rune: `JSON.parse(text)`, does: `Makes a real array or object from text. Gives back a <strong>new value</strong>: catch it in a box.`, gives: `An array or object` },
-          { rune: `JSON.parse("[]")`, does: `Gotcha table, row 1: text in, works.`, gives: `An empty array <code class="inline">[]</code>` },
-          { rune: `JSON.parse(null)`, does: `Gotcha table, row 2: no error here, but a loop over the result crashes later.`, gives: `<code class="inline">null</code>` },
-          { rune: `JSON.parse([])`, does: `Gotcha table, row 3: a real array isn't text. It becomes empty text <code class="inline">""</code>, so there's nothing to read.`, gives: `SyntaxError: unexpected end of data` }
-        ],
-        starter: `// function raiseDead()
-//   Line 1: let saved = what's saved under the key "army"
-//   Guard:  if saved is null, change saved to "[]"
-//   Line 2: const army = saved turned into an array
-//   Last line: return army
-
-`,
-        tests: [
-          { call: 'raiseDead().length', expected: 0 },
-          { call: 'Array.isArray(raiseDead())', expected: true },
-          { call: '(() => { localStorage.setItem("army", ARMY_TEXT); return raiseDead().length; })()', expected: 2 },
-          { call: '(() => { localStorage.setItem("army", ARMY_TEXT); return raiseDead()[1].name; })()', expected: "Ghoul" }
-        ],
-        hints: [
-          `Two problems in one spell: the vault might be empty, and the vault only speaks text.`,
-          `Solve the empty case before you turn the text into an array.`,
-          `The first two trials are a first visit: nothing is saved at all.`
-        ],
-        familiar: {
-          lang: "js", search: "JavaScript JSON.parse localStorage default value",
-          code: `const scroll = '[{"spell":"Light"}]';
-const spells = JSON.parse(scroll);
-console.log(spells[0].spell); // "Light"`
-        }
-      },
-
-      // ---------------------------------------------------------------
-      {
-        id: "animate", title: "Animate Dead", kind: "js", mode: "free",
-        request: `Write <code class="inline">animateDead</code>. It takes <code class="inline">graveyard</code> (an array of undead objects) and <code class="inline">horde</code> (an array that may already hold some). For each undead in the graveyard, it adds <strong>that one undead</strong> to the end of the horde. It releases how many are in the horde now.`,
+        id: "mirror", title: "Mirror Ward", kind: "js", mode: "free",
+        request: `Write <code class="inline">isMirrorOf</code>. It takes <code class="inline">ward</code> and <code class="inline">echo</code>. It releases <code class="inline">true</code> if <code class="inline">echo</code> is <code class="inline">ward</code> spelled backward, ignoring uppercase and lowercase. Otherwise it releases <code class="inline">false</code>.<br><br>Example: <code class="inline">"Lumos"</code> backward is <code class="inline">"somuL"</code>, so <code class="inline">isMirrorOf("Lumos", "somul")</code> is <code class="inline">true</code>.`,
         components: [
-          { name: "graveyard", desc: "An array of objects like { name: \"Skeleton\" }. Could be empty." },
-          { name: "horde", desc: "An array to fill. Could already hold undead." }
+          { name: "ward", desc: "The original word, as text. Example: \"Lumos\"." },
+          { name: "echo", desc: "The word to check, as text. Example: \"somul\"." }
         ],
         syntax: [
-          { rune: `for (let item of array) { … }`, does: `Runs the block once per item. <code class="inline">item</code> (your name) holds the <strong>current</strong> one each round.`, gives: `—` },
-          { rune: `array.push(item)`, does: `Adds <strong>one</strong> item to the end. Changes the array itself. Gotcha: <code class="inline">array.push(otherArray)</code> adds the whole other array as <strong>one single item</strong> (a nested array).`, gives: `(not needed here)` },
-          { rune: `push on a const array`, does: `Works. <code class="inline">const</code> stops the box from getting a new value; <code class="inline">.push()</code> changes what's inside the same array.`, gives: `—` },
-          { rune: `array.length`, does: `How many items. No <code class="inline">( )</code>.`, gives: `A number` }
+          { rune: `text.toLowerCase()`, does: `Gives back a <strong>new</strong> text in lowercase. Gotcha: it doesn't change the original, so catch the result in a box.`, gives: `Text` },
+          { rune: `let name = "";`, does: `A box that starts as empty text. Gotcha: use <code class="inline">let</code>, because it changes every loop round.`, gives: `—` },
+          { rune: `for (let i = text.length - 1; i >= 0; i--) { … }`, does: `Counts <strong>down</strong> through every index, from the last one to 0. <code class="inline">i</code> is a name you choose. Gotcha: <code class="inline">i > 0</code> would skip index 0.`, gives: `—` },
+          { rune: `text[i]`, does: `The one letter at index <code class="inline">i</code>.`, gives: `Text (one letter)` },
+          { rune: `box += more;`, does: `Adds to the <strong>end</strong> of the text in the box.`, gives: `—` },
+          { rune: `a === b`, does: `<code class="inline">true</code> only if both texts match exactly, letter for letter.`, gives: `true or false` },
+          { rune: `return true;`, does: `Releases a boolean and stops the spell. No quotes: <code class="inline">"true"</code> is text.`, gives: `—` }
         ],
-        starter: `// function animateDead(graveyard, horde)
-//   Loop: for each undead of graveyard:
-//           push that undead into horde
-//   Last line: return horde's length
+        starter: `// function isMirrorOf(ward, echo)
+//   Line 1: const lowerWard = ward in lowercase
+//   Line 2: const lowerEcho = echo in lowercase
+//   Line 3: let flipped = "" (empty text; let: it changes)
+//   Loop:   for each index of lowerWard, from the last index down to 0:
+//             add that letter to the end of flipped
+//   If flipped matches lowerEcho → return true, else → return false
 
 `,
         tests: [
-          { call: 'animateDead([{ name: "Skeleton" }, { name: "Zombie" }], [])', expected: 2 },
-          { call: 'animateDead([{ name: "Wight" }], [{ name: "Lich" }])', expected: 2 },
-          { call: 'animateDead([], [{ name: "Lich" }])', expected: 1 },
-          { call: '(() => { const horde = []; animateDead([{ name: "Skeleton" }, { name: "Zombie" }], horde); return horde[0].name; })()', expected: "Skeleton" },
-          { call: '(() => { const horde = []; animateDead([{ name: "Skeleton" }, { name: "Zombie" }], horde); return horde[1].name; })()', expected: "Zombie" }
+          { call: 'isMirrorOf("Lumos", "somul")', expected: true },
+          { call: 'isMirrorOf("Nox", "XON")', expected: true },
+          { call: 'isMirrorOf("abc", "abc")', expected: false },
+          { call: 'isMirrorOf("ward", "draw!")', expected: false },
+          { call: 'isMirrorOf("", "")', expected: true }
         ],
         hints: [
-          `One push per round of the loop.`,
-          `Each round, ask: which box holds just the current undead, and which box holds the whole graveyard?`,
-          `If the count is right but a name trial gives undefined, something bigger than one undead went into the horde.`
+          `Make both words the same case before you compare anything.`,
+          `Build the backward version of one word, then compare it to the other word.`,
+          `If "Nox" fails but "Lumos" passes, check which words got lowercased.`
         ],
         familiar: {
-          lang: "js", search: "JavaScript for of push array",
-          code: `const pack = [];
-pack.push({ item: "rope" });  // pack: [ {rope} ]
-pack.push(["a", "b"]);        // pack: [ {rope}, ["a","b"] ]  a whole array became ONE item
-for (let coin of purse) {
-  console.log(coin);          // one coin per round
-}`
+          lang: "js", search: "JavaScript for loop count down build string",
+          code: `const shout = "Fire".toUpperCase();   // "FIRE"
+let countdown = "";
+for (let i = 3; i >= 1; i--) {
+  countdown += i;                        // "3", then "32", then "321"
+}
+console.log(countdown === "321");        // true`
         }
       },
 
       // ---------------------------------------------------------------
       {
-        id: "resurrection", title: "Resurrection", kind: "js", mode: "free", hiddenSetup: VAULT,
+        id: "carve", title: "Carve the Sigil", kind: "js", mode: "free",
+        request: `Write <code class="inline">carveSigil</code>. It takes no components. It carves a brand-new, unique sigil (a random id) and releases it.<br><br>Every cast must carve a <strong>different</strong> sigil.`,
+        components: [],
+        mustInclude: "crypto.randomUUID(",
+        syntax: [
+          { rune: `crypto.randomUUID()`, does: `Makes a new random id each time it's cast. Gotcha: it gives back <strong>text</strong> (36 characters), not a number.`, gives: `Text, like <code class="inline">"a4bb76c0-e05a-4ca5-9719-531f03da7da0"</code>` },
+          { rune: `const name = …;`, does: `Catches the id in a box. <code class="inline">const</code> works: this box never changes.`, gives: `—` },
+          { rune: `return …;`, does: `Releases the value and stops the spell.`, gives: `—` }
+        ],
+        starter: `// function carveSigil()
+//   Line 1: const sigil = a new random id
+//   Last line: return sigil
+
+`,
+        tests: [
+          { call: 'typeof carveSigil()', expected: "string" },
+          { call: 'carveSigil().length', expected: 36 },
+          { call: 'carveSigil() !== carveSigil()', expected: true }
+        ],
+        hints: [
+          `You don't invent the sigil yourself. JavaScript has a built-in that makes one.`,
+          `The last trial casts the spell twice and checks that the two sigils are different.`
+        ],
+        familiar: {
+          lang: "js", search: "JavaScript crypto.randomUUID",
+          code: `console.log(crypto.randomUUID());  // a new id
+console.log(crypto.randomUUID());  // a different new id`
+        }
+      },
+
+      // ---------------------------------------------------------------
+      {
+        id: "bind", title: "Bind the Soul", kind: "js", mode: "free",
+        request: `Write <code class="inline">bindSoul</code>. It takes <code class="inline">name</code>. It creates a soul page: an object with three keys: <code class="inline">sigil</code> (a new random id), <code class="inline">name</code> (the name given), and <code class="inline">risen</code> (<code class="inline">false</code>). It releases the soul page.`,
+        components: [{ name: "name", desc: "The undead's name, as text. Example: \"Greg\"." }],
+        mustInclude: "crypto.randomUUID(",
+        syntax: [
+          { rune: `{ key: value, key: value }`, does: `Creates an object. Each key is followed by <code class="inline">:</code> and its value, with commas <strong>between</strong> keys. Key order doesn't matter.`, gives: `An object` },
+          { rune: `{ sigil: sigil }`, does: `A key and a box can share a name: the left one is the key's name, the right one is the box whose value goes in.`, gives: `—` },
+          { rune: `crypto.randomUUID()`, does: `A new random id, as text.`, gives: `Text` },
+          { rune: `false`, does: `A boolean. No quotes.`, gives: `—` }
+        ],
+        starter: `// function bindSoul(name)
+//   Line 1: const sigil = a new random id
+//   Line 2: const soul = an object with sigil, name, and risen: false
+//   Last line: return soul
+
+`,
+        tests: [
+          { call: 'bindSoul("Greg").name', expected: "Greg" },
+          { call: 'bindSoul("Greg").risen', expected: false },
+          { call: 'typeof bindSoul("Greg").sigil', expected: "string" },
+          { call: 'bindSoul("Greg").sigil.length', expected: 36 },
+          { call: '(() => { const a = bindSoul("Ann"); const b = bindSoul("Ann"); return a.sigil !== b.sigil; })()', expected: true }
+        ],
+        hints: [
+          `Carve the sigil first, then build the object around it.`,
+          `The last trial binds two souls with the same name. Their sigils must still be different: that's the whole point of a sigil.`
+        ],
+        familiar: {
+          lang: "js", search: "JavaScript create object with keys",
+          code: `const potionId = crypto.randomUUID();
+const potion = { id: potionId, flavor: "mint", used: false };
+console.log(potion.flavor);  // "mint"`
+        }
+      },
+
+      // ---------------------------------------------------------------
+      {
+        id: "mark", title: "Mark the Body", kind: "js", mode: "free",
+        request: `Write <code class="inline">markBody</code>. It takes <code class="inline">name</code> and <code class="inline">sigil</code>. It creates a <code class="inline">&lt;div&gt;</code> (the body), writes the name as its text, and carves the sigil on it as the label <code class="inline">data-sigil</code>. It releases the body.<br><br>The body isn't placed on a page; the trials just inspect it.`,
+        components: [
+          { name: "name", desc: "The undead's name, as text. Example: \"Greg\"." },
+          { name: "sigil", desc: "The id to carve. Example: \"a4bb\"." }
+        ],
+        mustInclude: "dataset.",
+        syntax: [
+          { rune: `document.createElement("div")`, does: `Creates a new element, not on the page yet.`, gives: `The element` },
+          { rune: `element.textContent = text;`, does: `Sets the words shown inside the element.`, gives: `—` },
+          { rune: `element.dataset.sigil = value;`, does: `Carves the invisible label <code class="inline">data-sigil="…"</code> on the element. The word after <code class="inline">dataset.</code> becomes the part after <code class="inline">data-</code>. Gotcha: the value is always stored as <strong>text</strong>, so <code class="inline">7</code> becomes <code class="inline">"7"</code>.`, gives: `—` },
+          { rune: `return element;`, does: `Releases the whole element.`, gives: `—` }
+        ],
+        starter: `// function markBody(name, sigil)
+//   Line 1: const body = a new div
+//   Line 2: set body's text to name
+//   Line 3: carve sigil on body as its data-sigil label
+//   Last line: return body
+
+`,
+        tests: [
+          { call: 'markBody("Greg", "a4bb").tagName', expected: "DIV" },
+          { call: 'markBody("Greg", "a4bb").textContent', expected: "Greg" },
+          { call: 'markBody("Greg", "a4bb").dataset.sigil', expected: "a4bb" },
+          { call: 'markBody("Greg", "a4bb").getAttribute("data-sigil")', expected: "a4bb" },
+          { call: 'markBody("Bob", 7).dataset.sigil', expected: "7" }
+        ],
+        hints: [
+          `Create the element first; every other line works on it.`,
+          `The label's name in the request is data-sigil. Which word goes after dataset. to make that?`,
+          `The last trial carves the number 7. Look at what Wanted shows: the quotes are the lesson.`
+        ],
+        familiar: {
+          lang: "js", search: "JavaScript dataset data attribute",
+          code: `const bottle = document.createElement("span");
+bottle.textContent = "Mint potion";
+bottle.dataset.flavor = "mint";            // <span data-flavor="mint">
+console.log(bottle.dataset.flavor);         // "mint"`
+        }
+      },
+
+      // ---------------------------------------------------------------
+      {
+        id: "mend", title: "Mend the Old Souls", kind: "js", mode: "free",
+        request: `Write <code class="inline">mendSouls</code>. It takes <code class="inline">souls</code>: an array of soul pages saved long ago, before sigils existed. Some have a <code class="inline">sigil</code> key, some don't. For each soul with <strong>no</strong> sigil, it carves a new one onto that same soul. Souls that already have a sigil keep it. It releases how many souls it mended.`,
+        components: [{ name: "souls", desc: "An array of objects like { name: \"Old King\" } or { name: \"Ann\", sigil: \"x1\" }. Could be empty." }],
+        mustInclude: "crypto.randomUUID(",
+        syntax: [
+          { rune: `soul.sigil === undefined`, does: `Asks "does this object have no sigil key?" Reading a missing key gives back <code class="inline">undefined</code>, with no error. Gotcha: no quotes around <code class="inline">undefined</code>.`, gives: `true or false` },
+          { rune: `soul.sigil = value;`, does: `Adds (or changes) the key on <strong>that same object</strong>. The object in the array changes too.`, gives: `—` },
+          { rune: `let count = 0;` + ` count += 1;`, does: `A counter: starts at 0, goes up by 1 each time. <code class="inline">let</code>, because it changes.`, gives: `—` },
+          { rune: `for (let item of array) { … }`, does: `Runs once per item; <code class="inline">item</code> holds the current one.`, gives: `—` }
+        ],
+        starter: `// function mendSouls(souls)
+//   Line 1: let mended = 0
+//   Loop:   for each soul of souls:
+//             if soul has no sigil:
+//               carve a new random id onto soul.sigil
+//               add 1 to mended
+//   Last line: return mended
+
+`,
+        tests: [
+          { call: 'mendSouls([{ name: "Old King" }, { name: "Ann", sigil: "x1" }])', expected: 1 },
+          { call: 'mendSouls([])', expected: 0 },
+          { call: '(() => { const souls = [{ name: "Ann", sigil: "x1" }]; mendSouls(souls); return souls[0].sigil; })()', expected: "x1" },
+          { call: '(() => { const souls = [{ name: "Old King" }]; mendSouls(souls); return typeof souls[0].sigil; })()', expected: "string" },
+          { call: '(() => { const souls = [{ name: "A" }, { name: "B" }]; mendSouls(souls); return souls[0].sigil !== souls[1].sigil; })()', expected: true }
+        ],
+        hints: [
+          `Only some souls need work. Check each one before you carve.`,
+          `Change the soul itself, not a copy. The trials look inside the array afterward.`,
+          `If the "x1" trial fails, a soul that already had a sigil got a new one.`
+        ],
+        familiar: {
+          lang: "js", search: "JavaScript check if object property is undefined",
+          code: `const lamp = { color: "blue" };
+console.log(lamp.size === undefined);   // true: no size key yet
+lamp.size = "small";                    // now it has one
+console.log(lamp.size);                 // "small"`
+        }
+      },
+
+      // ---------------------------------------------------------------
+      {
+        id: "soulbind", title: "Soulbinding", kind: "js", mode: "free",
         setup: `const battlefield = [];
 
-function raiseOnField(name, risen) {
-  if (risen === true) {
-    battlefield.push(name + " (risen)");
-  } else {
-    battlefield.push(name);
-  }
+function markBody(name, sigil) {
+  const body = document.createElement("div");
+  body.textContent = name;
+  body.dataset.sigil = sigil;
+  return body;
 }`,
-        setupNote: `Base spell already in your spellbook: raiseOnField draws one undead on the battlefield, like buildTask draws a task on the page. Cast it; don't rewrite it.`,
-        request: `Write <code class="inline">resurrection</code>. It takes <code class="inline">horde</code>: the array the rest of your spellbook saves from. It loads the army saved under <code class="inline">"army"</code> (using <code class="inline">"[]"</code> if nothing is saved) and turns it into an array. For each undead, it casts <code class="inline">raiseOnField</code> with the undead's <code class="inline">name</code> and <code class="inline">risen</code> status, and pushes that undead into <code class="inline">horde</code>. It releases how many are in the horde.<br><br>The last trial is a "refresh, then add": the army must survive.`,
-        components: [{ name: "horde", desc: "An array to fill, usually empty. Later spells push into it and save it." }],
-        mustInclude: "raiseOnField(",
+        setupNote: `Base spell already in your spellbook: markBody draws one body with its sigil, like buildTask draws a task with its data-id. Cast it; don't rewrite it.`,
+        request: `Write <code class="inline">raiseBound</code>. It takes <code class="inline">souls</code>, an array of soul pages (some old, with no sigil). For each soul: if it has no sigil, carve one onto it. Then cast <code class="inline">markBody</code> with the soul's <code class="inline">name</code> and <code class="inline">sigil</code>, and push the body into <code class="inline">battlefield</code>. It releases how many bodies are on the battlefield.<br><br>The trials check that every body's sigil <strong>matches</strong> its soul page's sigil.`,
+        components: [{ name: "souls", desc: "An array of objects like { name: \"Greg\" } or { name: \"Ann\", sigil: \"b2\" }." }],
+        mustInclude: "markBody(",
         syntax: [
-          { rune: `undead.name / undead.risen`, does: `Reads one key from the current object. Gotcha: a misspelled key (<code class="inline">undead.risn</code>) gives back <code class="inline">undefined</code>, with <strong>no error</strong>.`, gives: `That key's value` },
-          { rune: `raiseOnField(a, b)`, does: `Casts the base spell. Values land in its slots by order: name first, then risen.`, gives: `(nothing)` },
-          { rune: `Everything else`, does: `Runes from Gentle Repose, Raise Dead and Animate Dead: <code class="inline">let</code>, changing a box with no keyword, <code class="inline">"[]"</code>, <code class="inline">JSON.parse</code>, <code class="inline">for…of</code>, <code class="inline">.push(item)</code>.`, gives: `—` }
+          { rune: `markBody(soul.name, soul.sigil)`, does: `Casts the base spell. Values land in its slots by order: name first, then sigil.`, gives: `The body (a div)` },
+          { rune: `battlefield.push(body)`, does: `Adds one body to the end of the battlefield array.`, gives: `(not needed here)` },
+          { rune: `Everything else`, does: `Runes from Mend the Old Souls: <code class="inline">=== undefined</code>, <code class="inline">soul.sigil = …</code>, <code class="inline">crypto.randomUUID()</code>, <code class="inline">for…of</code>. Gotcha: the order of the lines inside the loop decides which sigil gets carved on the body.`, gives: `—` }
         ],
-        starter: `// function resurrection(horde)
-//   Line 1: let saved = what's saved under the key "army"
-//   Guard:  if saved is null, change saved to "[]"
-//   Line 2: const army = saved turned into an array
-//   Loop:   for each undead of army:
-//             cast raiseOnField with the undead's name and its risen status
-//             push this undead into horde
-//   Last line: return horde's length
+        starter: `// function raiseBound(souls)
+//   Loop: for each soul of souls:
+//           if soul has no sigil, carve a new random id onto soul.sigil
+//           const body = cast markBody with soul's name and soul's sigil
+//           push body into battlefield
+//   Last line: return battlefield's length
 
 `,
         tests: [
-          { call: 'resurrection([])', expected: 0 },
-          { call: '(() => { localStorage.setItem("army", ARMY_TEXT); return resurrection([]); })()', expected: 2 },
-          { call: '(() => { localStorage.setItem("army", ARMY_TEXT); resurrection([]); return battlefield.join(", "); })()', expected: "Skeleton (risen), Ghoul" },
-          { call: '(() => { localStorage.setItem("army", ARMY_TEXT); const horde = []; resurrection(horde); horde.push({ name: "Wraith", risen: false }); localStorage.setItem("army", JSON.stringify(horde)); return JSON.parse(localStorage.getItem("army")).length; })()', expected: 3 }
+          { call: 'raiseBound([{ name: "Greg" }, { name: "Ann", sigil: "b2" }])', expected: 2 },
+          { call: '(() => { raiseBound([{ name: "Greg" }, { name: "Ann", sigil: "b2" }]); return battlefield[1].dataset.sigil; })()', expected: "b2" },
+          { call: '(() => { raiseBound([{ name: "Greg" }]); return battlefield[0].dataset.sigil !== "undefined"; })()', expected: true },
+          { call: '(() => { const souls = [{ name: "Greg" }]; raiseBound(souls); return battlefield[0].dataset.sigil === souls[0].sigil; })()', expected: true }
         ],
         hints: [
-          `This is Raise Dead and Animate Dead joined, plus one base spell.`,
-          `Inside the loop, each undead gets two jobs: one for the battlefield, one for the horde.`,
-          `If the last trial gives 1, the loaded undead were drawn on the field but never joined the horde.`
+          `This is Mend the Old Souls plus drawing a body, inside one loop.`,
+          `The body copies the soul's sigil at the moment markBody is cast. What does the soul need to have by then?`,
+          `If a body shows the sigil "undefined", it was drawn before its soul was mended.`
         ],
         familiar: {
-          lang: "js", search: "JavaScript loop over array of objects call function",
-          code: `for (let book of library) {
-  showBook(book.title, book.finished);  // read two keys, cast a function
-  shelf.push(book);                     // the whole current object
+          lang: "js", search: "JavaScript loop over objects add property then call function",
+          code: `for (let potion of shelf) {
+  if (potion.label === undefined) {
+    potion.label = "unknown";               // fix the object first
+  }
+  drawBottle(potion.flavor, potion.label);  // then draw it
 }`
         }
       }
     ]
   }
 ];
-
